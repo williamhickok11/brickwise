@@ -1,0 +1,12 @@
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Binaries
+brickwise
+brickwise.exe
+
+# Test coverage
+*.out
+*.prof
