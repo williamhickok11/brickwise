@@ -16,8 +16,8 @@ type Logger struct {
 func New() *Logger {
 	opts := &slog.HandlerOptions{
 		Level: slog.LevelInfo,
-		// AddCaller shows file:line in logs (useful for debugging)
-		AddCaller: true,
+		// Note: AddCaller field requires Go 1.21+
+		// Removed for compatibility with older Go versions
 	}
 
 	var handler slog.Handler

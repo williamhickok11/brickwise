@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"time"
+	// "time"
 
 	"brickwise/backend/internal/errors"
 	"brickwise/backend/internal/logger"
@@ -193,12 +193,12 @@ func (h *TimeEntryHandler) ExportTimeEntries(w http.ResponseWriter, r *http.Requ
 
 	// Write data rows
 	for _, entry := range entries {
-		propertyName := "General"
-		if entry.PropertyID != nil {
-			// In a real implementation, you'd fetch the property name
-			// For now, we'll just use the ID
-			propertyName = ""
-		}
+		// propertyName := "General"
+		// if entry.PropertyID != nil {
+		// 	// In a real implementation, you'd fetch the property name
+		// 	// For now, we'll just use the ID
+		// 	propertyName = ""
+		// }
 
 		row := []string{
 			entry.Date.Time.Format("2006-01-02"),

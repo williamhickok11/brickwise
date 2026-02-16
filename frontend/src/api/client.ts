@@ -16,6 +16,7 @@ const client = axios.create({
 
 export const propertyApi = {
   list: (): Promise<Property[]> => {
+    // console.log('propertyApi list')
     return client.get('/properties').then((res) => res.data)
   },
 
