@@ -2,7 +2,7 @@
   <div class="properties">
     <div class="header">
       <h2>Properties</h2>
-      <button @click="showForm = !showForm" class="btn btn-primary">
+      <button @click="toggleForm" class="btn btn-primary">
         {{ showForm ? 'Cancel' : 'Add Property' }}
       </button>
     </div>
@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { usePropertyStore } from '@/stores/property'
 import type { CreatePropertyRequest } from '@/types/property'
 
@@ -82,11 +82,25 @@ const form = ref<CreatePropertyRequest>({
 
 const properties = computed(() => store.properties)
 
+// #region agent log
+watch(showForm, (newVal, oldVal) => {
+  fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:watch(showForm)',message:'showForm changed',data:{newVal,oldVal},timestamp:Date.now()})}).catch(()=>{});
+}, { immediate: true })
+// #endregion
+
 onMounted(() => {
   store.fetchProperties()
 })
 
+function toggleForm() {
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:toggleForm',message:'Add Property button clicked',data:{showFormBefore:showForm.value},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
+  showForm.value = !showForm.value
+}
+
 async function handleSubmit() {
+  console.log('handleSubmit', form.value)
   try {
     await store.createProperty(form.value)
     form.value = { name: '', address: '', property_type: '', default_mileage: 0 }
