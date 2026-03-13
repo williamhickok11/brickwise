@@ -2,12 +2,24 @@
   <div class="properties">
     <div class="header">
       <h2>Properties</h2>
-      <button @click="toggleForm" class="btn btn-primary">
-        {{ showForm ? 'Cancel' : 'Add Property' }}
+      <router-link
+        v-if="!showAddForm"
+        :to="{ path: '/properties', query: { ...route.query, add: '1' } }"
+        class="btn btn-primary"
+      >
+        Add Property
+      </router-link>
+      <button
+        v-else
+        type="button"
+        @click="closeForm"
+        class="btn btn-primary"
+      >
+        Cancel
       </button>
     </div>
 
-    <form v-if="showForm" @submit.prevent="handleSubmit" class="property-form">
+    <form v-if="showAddForm" @submit.prevent="handleSubmit" class="property-form">
       <input
         v-model="form.name"
         type="text"
@@ -68,11 +80,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { usePropertyStore } from '@/stores/property'
 import type { CreatePropertyRequest } from '@/types/property'
 
+const route = useRoute()
+const router = useRouter()
 const store = usePropertyStore()
-const showForm = ref(false)
 const form = ref<CreatePropertyRequest>({
   name: '',
   address: '',
@@ -81,10 +95,12 @@ const form = ref<CreatePropertyRequest>({
 })
 
 const properties = computed(() => store.properties)
+/** Driven by URL so form visibility survives remounts/HMR. */
+const showAddForm = computed(() => route.query.add === '1')
 
 // #region agent log
-watch(showForm, (newVal, oldVal) => {
-  fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:watch(showForm)',message:'showForm changed',data:{newVal,oldVal},timestamp:Date.now()})}).catch(()=>{});
+watch(showAddForm, (newVal, oldVal) => {
+  fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:watch(showAddForm)',message:'showAddForm changed',data:{newVal,oldVal},timestamp:Date.now()})}).catch(()=>{});
   if (newVal === true) {
     nextTick(() => {
       const el = document.querySelector('.property-form')
@@ -96,7 +112,7 @@ watch(showForm, (newVal, oldVal) => {
         visibility = s.visibility
         rect = el.getBoundingClientRect()
       }
-      fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:watch(showForm)-afterNextTick',message:'DOM check when showForm true',data:{inDom,display,visibility,rect:rect?{top:rect.top,left:rect.left,width:rect.width,height:rect.height}:null},timestamp:Date.now()})}).catch(()=>{});
+      fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:watch(showAddForm)-afterNextTick',message:'DOM check when showAddForm true',data:{inDom,display,visibility,rect:rect?{top:rect.top,left:rect.left,width:rect.width,height:rect.height}:null},timestamp:Date.now()})}).catch(()=>{});
     })
   }
 }, { immediate: true })
@@ -109,11 +125,13 @@ onMounted(() => {
   store.fetchProperties()
 })
 
-function toggleForm() {
+function closeForm() {
   // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:toggleForm',message:'Add Property button clicked',data:{showFormBefore:showForm.value},timestamp:Date.now()})}).catch(()=>{});
+  fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:closeForm',message:'Cancel clicked',data:{},timestamp:Date.now()})}).catch(()=>{});
   // #endregion
-  showForm.value = !showForm.value
+  const q = { ...route.query }
+  delete q.add
+  router.replace({ path: '/properties', query: q })
 }
 
 async function handleSubmit() {
@@ -121,7 +139,7 @@ async function handleSubmit() {
   try {
     await store.createProperty(form.value)
     form.value = { name: '', address: '', property_type: '', default_mileage: 0 }
-    showForm.value = false
+    closeForm()
   } catch (err) {
     // Error handled by store
   }

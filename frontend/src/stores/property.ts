@@ -3,10 +3,32 @@ import { ref } from 'vue'
 import { propertyApi } from '@/api/client'
 import type { Property, CreatePropertyRequest } from '@/types/property'
 
+const SHOW_ADD_FORM_KEY = 'brickwise.properties.showAddForm'
+
+function getStoredShowAddForm(): boolean {
+  try {
+    return sessionStorage.getItem(SHOW_ADD_FORM_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
 export const usePropertyStore = defineStore('property', () => {
   const properties = ref<Property[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  /** Persisted so Add Property form stays visible across remounts and full HMR. */
+  const showAddForm = ref(getStoredShowAddForm())
+
+  function setShowAddForm(value: boolean) {
+    showAddForm.value = value
+    try {
+      if (value) sessionStorage.setItem(SHOW_ADD_FORM_KEY, '1')
+      else sessionStorage.removeItem(SHOW_ADD_FORM_KEY)
+    } catch {
+      /* ignore */
+    }
+  }
 
   async function fetchProperties() {
     loading.value = true
@@ -53,6 +75,8 @@ export const usePropertyStore = defineStore('property', () => {
     properties,
     loading,
     error,
+    showAddForm,
+    setShowAddForm,
     fetchProperties,
     createProperty,
     deleteProperty,
