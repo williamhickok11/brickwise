@@ -79,7 +79,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePropertyStore } from '@/stores/property'
 import type { CreatePropertyRequest } from '@/types/property'
@@ -94,48 +94,21 @@ const form = ref<CreatePropertyRequest>({
   default_mileage: 0,
 })
 
-const properties = computed(() => store.properties)
+const properties = computed(() => store.properties ?? [])
 /** Driven by URL so form visibility survives remounts/HMR. */
 const showAddForm = computed(() => route.query.add === '1')
 
-// #region agent log
-watch(showAddForm, (newVal, oldVal) => {
-  fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:watch(showAddForm)',message:'showAddForm changed',data:{newVal,oldVal},timestamp:Date.now()})}).catch(()=>{});
-  if (newVal === true) {
-    nextTick(() => {
-      const el = document.querySelector('.property-form')
-      const inDom = !!el
-      let display = ''; let visibility = ''; let rect = null
-      if (el && el instanceof HTMLElement) {
-        const s = getComputedStyle(el)
-        display = s.display
-        visibility = s.visibility
-        rect = el.getBoundingClientRect()
-      }
-      fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:watch(showAddForm)-afterNextTick',message:'DOM check when showAddForm true',data:{inDom,display,visibility,rect:rect?{top:rect.top,left:rect.left,width:rect.width,height:rect.height}:null},timestamp:Date.now()})}).catch(()=>{});
-    })
-  }
-}, { immediate: true })
-// #endregion
-
 onMounted(() => {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:onMounted',message:'PropertiesView mounted',data:{},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   store.fetchProperties()
 })
 
 function closeForm() {
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/baab389f-b888-48a8-b2aa-d93745e27105',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'91b13f'},body:JSON.stringify({sessionId:'91b13f',location:'PropertiesView.vue:closeForm',message:'Cancel clicked',data:{},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion
   const q = { ...route.query }
   delete q.add
   router.replace({ path: '/properties', query: q })
 }
 
 async function handleSubmit() {
-  console.log('handleSubmit', form.value)
   try {
     await store.createProperty(form.value)
     form.value = { name: '', address: '', property_type: '', default_mileage: 0 }

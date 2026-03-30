@@ -34,7 +34,7 @@ export const usePropertyStore = defineStore('property', () => {
     loading.value = true
     error.value = null
     try {
-      properties.value = await propertyApi.list()
+      properties.value = (await propertyApi.list()) ?? []
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch properties'
     } finally {
