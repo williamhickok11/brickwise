@@ -170,7 +170,7 @@ const propertyStore = usePropertyStore()
 const loading = ref(false)
 const error = ref<string | null>(null)
 const isRecording = ref(false)
-const recognition = ref<SpeechRecognition | null>(null)
+const recognition = ref<any | null>(null)
 
 const editing = computed(() => !!props.entry)
 

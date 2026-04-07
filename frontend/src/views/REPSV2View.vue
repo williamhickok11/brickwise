@@ -1,13 +1,39 @@
 <template>
   <div class="reps-v2-view">
     <div class="header">
-      <h1>REPS V2 - Free Form</h1>
-      <p class="subtitle">Just type or speak naturally. We'll parse it.</p>
+      <h1>REPS Time Tracking V3</h1>
+      <p class="subtitle">Capture once, review quickly, then copy Summary or CSV.</p>
     </div>
 
     <div v-if="store.error" class="error">{{ store.error }}</div>
 
-    <div class="entry-form">
+    <div class="entry-card">
+      <h2>1) Capture</h2>
+      <div class="form-group">
+        <label>Free Form Entry</label>
+        <div class="text-input-wrapper">
+          <textarea
+            v-model="freeFormText"
+            @input="handleTextChange"
+            class="input textarea"
+            placeholder="Example: Yesterday 2.5 hours maintenance fixed sink"
+            rows="5"
+          />
+          <button
+            v-if="isVoiceSupported"
+            type="button"
+            @click="toggleVoiceInput"
+            :class="['btn', 'btn-voice', { recording: isRecording }]"
+          >
+            {{ isRecording ? 'Stop' : 'Voice' }}
+          </button>
+        </div>
+        <p class="hint">Tip: Include hours explicitly (e.g. 1.5h, 2 hours).</p>
+      </div>
+    </div>
+
+    <div class="entry-card">
+      <h2>2) Review & Edit</h2>
       <div class="form-group">
         <label>Property</label>
         <select v-model="selectedPropertyId" class="input">
@@ -22,48 +48,34 @@
         </select>
       </div>
 
-      <div class="form-group">
-        <label>Free Form Entry</label>
-        <div class="text-input-wrapper">
-          <textarea
-            v-model="freeFormText"
-            @input="handleTextChange"
-            class="input textarea"
-            placeholder="Example: '2.5 hours of property management fixing the sink at Main St' or 'Spent 3 hours on maintenance and repairs, drove 22 miles'"
-            rows="6"
-          />
-          <button
-            v-if="isVoiceSupported"
-            type="button"
-            @click="toggleVoiceInput"
-            :class="['btn', 'btn-voice', { recording: isRecording }]"
-          >
-            {{ isRecording ? '🎤 Recording...' : '🎤 Voice' }}
-          </button>
-        </div>
-        <p class="hint">
-          Try: "2 hours maintenance fixing sink" or "Yesterday: 1.5h contractor oversight"
-        </p>
-      </div>
-
-      <!-- Parsed Preview -->
       <div v-if="parsedData && freeFormText.trim()" class="parsed-preview">
-        <h3>Parsed Information</h3>
+        <h3>Parsed Fields</h3>
+        <p v-if="parsedData.confidence === 'low'" class="warning">
+          Hours were not confidently parsed. Enter hours manually before saving/copying.
+        </p>
         <div class="preview-grid">
           <div class="preview-item">
             <span class="preview-label">Date:</span>
-            <span class="preview-value">{{ formatDisplayDate(parsedData.date) }}</span>
+            <input v-model="parsedData.date" type="date" class="input input-small" />
             <span :class="['confidence-badge', parsedData.confidence]">
               {{ parsedData.confidence }}
             </span>
           </div>
           <div class="preview-item">
             <span class="preview-label">Hours:</span>
-            <span class="preview-value">{{ parsedData.hours || 'Not found' }}</span>
+            <input
+              v-model.number="parsedData.hours"
+              type="number"
+              min="0"
+              max="24"
+              step="0.25"
+              class="input input-small"
+            />
           </div>
           <div class="preview-item">
             <span class="preview-label">Category:</span>
             <select v-model="parsedData.category" class="input input-small">
+              <option value="">Select category</option>
               <option v-for="cat in CATEGORIES" :key="cat" :value="cat">
                 {{ cat }}
               </option>
@@ -77,12 +89,46 @@
               rows="2"
             />
           </div>
-          <div v-if="parsedData.mileage > 0" class="preview-item">
+          <div class="preview-item">
             <span class="preview-label">Mileage:</span>
-            <span class="preview-value">{{ parsedData.mileage }} miles</span>
+            <input
+              v-model.number="parsedData.mileage"
+              type="number"
+              min="0"
+              step="0.1"
+              class="input input-small"
+            />
+          </div>
+          <div class="preview-item">
+            <label class="checkbox-label">
+              <input v-model="parsedData.full_drive" type="checkbox" />
+              <span>Full Drive</span>
+            </label>
           </div>
         </div>
       </div>
+      <p v-else class="empty-mini">Add free-form text above to preview parsed fields.</p>
+    </div>
+
+    <div class="entry-card">
+      <h2>3) Copy & Save</h2>
+      <div class="copy-panel" v-if="parsedData">
+        <div class="copy-item">
+          <label>Summary (copy/paste friendly)</label>
+          <textarea class="input textarea-small" :value="summaryOutput" rows="2" readonly />
+          <button class="btn btn-secondary" :disabled="!canCopy" @click="copySummary">
+            {{ copyStatus === 'summary' ? 'Copied' : 'Copy Summary' }}
+          </button>
+        </div>
+        <div class="copy-item">
+          <label>CSV Row (Excel)</label>
+          <textarea class="input textarea-small" :value="csvOutput" rows="2" readonly />
+          <button class="btn btn-secondary" :disabled="!canCopy" @click="copyCsv">
+            {{ copyStatus === 'csv' ? 'Copied' : 'Copy CSV Row' }}
+          </button>
+        </div>
+      </div>
+      <p v-else class="empty-mini">Parse an entry before copying or saving.</p>
 
       <div class="form-actions">
         <button
@@ -102,7 +148,6 @@
       </div>
     </div>
 
-    <!-- Recent Entries -->
     <div v-if="recentEntries.length > 0" class="recent-entries">
       <h2>Recent Entries</h2>
       <div class="entries-list">
@@ -139,7 +184,8 @@ const freeFormText = ref('')
 const selectedPropertyId = ref<number | null>(null)
 const parsedData = ref<ParsedREPSEntry | null>(null)
 const isRecording = ref(false)
-const recognition = ref<SpeechRecognition | null>(null)
+const recognition = ref<any | null>(null)
+const copyStatus = ref<'summary' | 'csv' | null>(null)
 
 const properties = computed(() => propertyStore.properties)
 const recentEntries = computed(() => store.entries.slice(0, 5))
@@ -150,7 +196,38 @@ const isVoiceSupported = computed(() => {
 
 const canSave = computed(() => {
   if (!parsedData.value) return false
-  return parsedData.value.hours > 0 && parsedData.value.description.trim().length > 0
+  return (
+    parsedData.value.hours > 0 &&
+    parsedData.value.description.trim().length > 0 &&
+    parsedData.value.category.trim().length > 0
+  )
+})
+
+const canCopy = computed(() => canSave.value)
+
+const selectedPropertyName = computed(() => {
+  if (selectedPropertyId.value === null) return 'General'
+  const property = properties.value.find((p) => p.id === selectedPropertyId.value)
+  return property?.name || 'Unknown'
+})
+
+const summaryOutput = computed(() => {
+  if (!parsedData.value) return ''
+  return `${parsedData.value.date} | ${selectedPropertyName.value} | ${parsedData.value.hours.toFixed(2)}h | ${parsedData.value.category} | ${parsedData.value.description.trim()}`
+})
+
+const csvOutput = computed(() => {
+  if (!parsedData.value) return ''
+  const row = [
+    parsedData.value.date,
+    selectedPropertyName.value,
+    parsedData.value.category,
+    parsedData.value.hours.toFixed(2),
+    parsedData.value.description.trim(),
+    parsedData.value.mileage.toString(),
+    parsedData.value.full_drive ? 'true' : 'false',
+  ]
+  return row.map(csvEscape).join(',')
 })
 
 onMounted(() => {
@@ -167,7 +244,9 @@ onMounted(() => {
 
     recognition.value.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript
-      freeFormText.value = transcript
+      freeFormText.value = freeFormText.value.trim()
+        ? `${freeFormText.value.trim()} ${transcript}`.trim()
+        : transcript
       handleTextChange()
       isRecording.value = false
     }
@@ -233,6 +312,33 @@ async function handleSave() {
 function handleClear() {
   freeFormText.value = ''
   parsedData.value = null
+  copyStatus.value = null
+}
+
+async function copySummary() {
+  await copyText(summaryOutput.value, 'summary')
+}
+
+async function copyCsv() {
+  await copyText(csvOutput.value, 'csv')
+}
+
+async function copyText(text: string, status: 'summary' | 'csv') {
+  if (!text || !canCopy.value) return
+  try {
+    await navigator.clipboard.writeText(text)
+    copyStatus.value = status
+    setTimeout(() => {
+      copyStatus.value = null
+    }, 1200)
+  } catch {
+    copyStatus.value = null
+  }
+}
+
+function csvEscape(value: string): string {
+  const escaped = value.replace(/"/g, '""')
+  return `"${escaped}"`
 }
 
 function formatDate(dateString: string): string {
@@ -242,21 +348,7 @@ function formatDate(dateString: string): string {
     day: 'numeric',
     year: 'numeric',
   })
-}
 
-function formatDisplayDate(dateString: string): string {
-  const date = new Date(dateString)
-  const today = new Date()
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-
-  if (date.toDateString() === today.toDateString()) {
-    return 'Today'
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return 'Yesterday'
-  } else {
-    return formatDate(dateString)
-  }
 }
 
 function getPropertyName(propertyId: number | null): string {
@@ -278,6 +370,20 @@ function getPropertyName(propertyId: number | null): string {
   margin-bottom: 2rem;
 }
 
+.entry-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
+.entry-card h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.05rem;
+  color: #2c3e50;
+}
+
 .header h1 {
   margin: 0 0 0.5rem 0;
   font-size: 1.75rem;
@@ -290,16 +396,8 @@ function getPropertyName(propertyId: number | null): string {
   font-size: 0.9rem;
 }
 
-.entry-form {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
-}
-
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 label {
@@ -320,7 +418,7 @@ label {
 
 .textarea {
   resize: vertical;
-  min-height: 120px;
+  min-height: 100px;
 }
 
 .text-input-wrapper {
@@ -331,8 +429,8 @@ label {
   position: absolute;
   bottom: 0.5rem;
   right: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.9rem;
   background: #95a5a6;
   color: white;
   border: none;
@@ -353,9 +451,9 @@ label {
 
 .parsed-preview {
   background: #f8f9fa;
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 8px;
-  margin-top: 1.5rem;
+  margin-top: 0.75rem;
   border: 2px solid #3498db;
 }
 
@@ -390,12 +488,11 @@ label {
 
 .input-small {
   flex: 1;
-  min-width: 200px;
+  min-width: 150px;
 }
 
 .textarea-small {
-  flex: 1;
-  min-width: 200px;
+  min-height: 72px;
 }
 
 .confidence-badge {
@@ -424,7 +521,7 @@ label {
 .form-actions {
   display: flex;
   gap: 0.5rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .btn {
@@ -467,6 +564,37 @@ label {
   padding: 1rem;
   border-radius: 4px;
   margin-bottom: 1rem;
+}
+
+.warning {
+  margin: 0 0 0.75rem 0;
+  padding: 0.6rem;
+  border-radius: 6px;
+  background: #fff3cd;
+  color: #856404;
+  font-size: 0.875rem;
+}
+
+.copy-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.copy-item {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.empty-mini {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .recent-entries {
@@ -528,10 +656,6 @@ label {
 @media (max-width: 768px) {
   .reps-v2-view {
     padding: 0.5rem;
-  }
-
-  .entry-form {
-    padding: 1rem;
   }
 
   .preview-item {

@@ -1,5 +1,3 @@
-import { CATEGORIES } from '@/types/time_entry'
-
 export interface ParsedREPSEntry {
   hours: number
   category: string
@@ -24,27 +22,26 @@ export function parseREPSText(text: string, defaultDate: string = getTodayDate()
   // Default values
   let hours = 0
   let category = ''
-  let description = text.trim()
   let date = defaultDate
   let mileage = 0
   let full_drive = false
   let confidence: 'high' | 'medium' | 'low' = 'low'
+  let hasDateCue = false
+  let hasHours = false
 
   // Extract date references
   const dateMatch = normalized.match(/\b(today|yesterday|tomorrow)\b/)
   if (dateMatch) {
+    hasDateCue = true
     const today = new Date()
     if (dateMatch[0] === 'yesterday') {
       today.setDate(today.getDate() - 1)
       date = formatDate(today)
-      confidence = 'high'
     } else if (dateMatch[0] === 'tomorrow') {
       today.setDate(today.getDate() + 1)
       date = formatDate(today)
-      confidence = 'high'
     } else {
       date = defaultDate
-      confidence = 'high'
     }
   }
 
@@ -59,7 +56,7 @@ export function parseREPSText(text: string, defaultDate: string = getTodayDate()
     if (match) {
       hours = parseFloat(match[1])
       if (hours > 0 && hours <= 24) {
-        confidence = confidence === 'low' ? 'medium' : 'high'
+        hasHours = true
         break
       }
     }
@@ -78,32 +75,16 @@ export function parseREPSText(text: string, defaultDate: string = getTodayDate()
       mileage = parseFloat(match[1])
       if (mileage > 0) {
         full_drive = true
-        confidence = confidence === 'low' ? 'medium' : 'high'
         break
       }
     }
   }
 
-  // Extract category - match against known categories
-  const categoryKeywords: Record<string, string[]> = {
-    'Property Management': ['property management', 'property', 'managing', 'tenant'],
-    'Maintenance & Repairs': ['maintenance', 'repair', 'fix', 'fixed', 'fixing', 'sink', 'plumbing', 'electrical'],
-    'Contractor Oversight': ['contractor', 'oversight', 'supervise', 'supervising', 'inspection'],
-    'Accounting & Admin': ['accounting', 'admin', 'administrative', 'paperwork', 'billing', 'invoices'],
-    'Deal Sourcing': ['deal', 'sourcing', 'property search', 'looking for', 'viewing property'],
-    'Construction Oversight': ['construction', 'build', 'building', 'renovation', 'remodel'],
-    'Software Management': ['software', 'system', 'app', 'database', 'tech'],
-  }
-
-  for (const [cat, keywords] of Object.entries(categoryKeywords)) {
-    for (const keyword of keywords) {
-      if (normalized.includes(keyword)) {
-        category = cat
-        confidence = confidence === 'low' ? 'medium' : 'high'
-        break
-      }
-    }
-    if (category) break
+  // Confidence semantics prioritize whether we captured valid hours.
+  if (hasHours) {
+    confidence = hasDateCue ? 'high' : 'medium'
+  } else if (hasDateCue) {
+    confidence = 'medium'
   }
 
   // Clean up description - remove extracted info to make it cleaner
@@ -119,26 +100,12 @@ export function parseREPSText(text: string, defaultDate: string = getTodayDate()
   cleanDescription = cleanDescription.replace(/(\d+\.?\d*)\s*(?:miles?|mi)\b/gi, '')
   cleanDescription = cleanDescription.replace(/drove\s+(\d+\.?\d*)/gi, '')
   
-  // Remove category mentions if they're standalone
-  for (const [cat, keywords] of Object.entries(categoryKeywords)) {
-    for (const keyword of keywords) {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'gi')
-      cleanDescription = cleanDescription.replace(regex, '')
-    }
-  }
-  
   // Clean up extra whitespace
   cleanDescription = cleanDescription.replace(/\s+/g, ' ').trim()
   
   // If description is empty or too short, use original text
   if (cleanDescription.length < 10) {
     cleanDescription = text.trim()
-  }
-
-  // If no category found, default to first category (user can edit)
-  if (!category && CATEGORIES.length > 0) {
-    category = CATEGORIES[0]
-    confidence = 'low'
   }
 
   return {
