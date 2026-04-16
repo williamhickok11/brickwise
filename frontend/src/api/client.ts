@@ -1,6 +1,12 @@
 import axios from 'axios'
 import type { Property, CreatePropertyRequest } from '@/types/property'
 import type {
+  Residence,
+  CreateResidenceRequest,
+  UpdateResidenceRequest,
+  ResidenceFilter,
+} from '@/types/residence'
+import type {
   TimeEntry,
   CreateTimeEntryRequest,
   UpdateTimeEntryRequest,
@@ -98,5 +104,32 @@ export const timeEntryApi = {
     const queryString = params.toString()
     const url = queryString ? `/time-entries/export?${queryString}` : '/time-entries/export'
     return client.get(url, { responseType: 'blob' }).then((res) => res.data)
+  },
+}
+
+export const residenceApi = {
+  list: (filter?: ResidenceFilter): Promise<Residence[]> => {
+    const params = new URLSearchParams()
+    if (filter?.property_id !== undefined) {
+      params.append('property_id', filter.property_id.toString())
+    }
+    if (filter?.is_active !== undefined) {
+      params.append('is_active', filter.is_active.toString())
+    }
+    const queryString = params.toString()
+    const url = queryString ? `/residences?${queryString}` : '/residences'
+    return client.get(url).then((res) => res.data)
+  },
+
+  get: (id: number): Promise<Residence> => {
+    return client.get(`/residences/${id}`).then((res) => res.data)
+  },
+
+  create: (data: CreateResidenceRequest): Promise<Residence> => {
+    return client.post('/residences', data).then((res) => res.data)
+  },
+
+  update: (id: number, data: UpdateResidenceRequest): Promise<Residence> => {
+    return client.put(`/residences/${id}`, data).then((res) => res.data)
   },
 }

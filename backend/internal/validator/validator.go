@@ -3,6 +3,7 @@ package validator
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"brickwise/backend/internal/errors"
 	"brickwise/backend/internal/models"
@@ -83,6 +84,85 @@ func ValidateProperty(name, address, propertyType string) error {
 	}
 
 	return nil
+}
+
+// ValidateResidenceCreate validates residence creation/update requests.
+func ValidateResidenceCreate(req *models.CreateResidenceRequest) error {
+	var errs ValidationErrors
+
+	if req.PropertyID <= 0 {
+		errs.Errors = append(errs.Errors, ValidationError{
+			Field:   "property_id",
+			Message: "property_id is required",
+		})
+	}
+
+	if strings.TrimSpace(req.Name) == "" {
+		errs.Errors = append(errs.Errors, ValidationError{
+			Field:   "name",
+			Message: "name is required",
+		})
+	} else if len(req.Name) > 255 {
+		errs.Errors = append(errs.Errors, ValidationError{
+			Field:   "name",
+			Message: "name must be 255 characters or less",
+		})
+	}
+
+	if strings.TrimSpace(req.StartDate) == "" {
+		errs.Errors = append(errs.Errors, ValidationError{
+			Field:   "start_date",
+			Message: "start_date is required",
+		})
+	} else if _, err := time.Parse("2006-01-02", req.StartDate); err != nil {
+		errs.Errors = append(errs.Errors, ValidationError{
+			Field:   "start_date",
+			Message: "start_date must be in YYYY-MM-DD format",
+		})
+	}
+
+	if req.EndDate != nil {
+		if strings.TrimSpace(*req.EndDate) == "" {
+			// Allow explicit empty string as "not set"
+		} else if _, err := time.Parse("2006-01-02", *req.EndDate); err != nil {
+			errs.Errors = append(errs.Errors, ValidationError{
+				Field:   "end_date",
+				Message: "end_date must be in YYYY-MM-DD format",
+			})
+		}
+	}
+
+	if len(req.Phone) > 255 {
+		errs.Errors = append(errs.Errors, ValidationError{
+			Field:   "phone",
+			Message: "phone must be 255 characters or less",
+		})
+	}
+
+	if len(req.Email) > 255 {
+		errs.Errors = append(errs.Errors, ValidationError{
+			Field:   "email",
+			Message: "email must be 255 characters or less",
+		})
+	}
+
+	if len(errs.Errors) > 0 {
+		return &errs
+	}
+	return nil
+}
+
+func ValidateResidenceUpdate(req *models.UpdateResidenceRequest) error {
+	// Same constraints for v1; move-out is modeled as update with `is_active=false` and optional `end_date`.
+	return ValidateResidenceCreate(&models.CreateResidenceRequest{
+		PropertyID: req.PropertyID,
+		Name:       req.Name,
+		Phone:      req.Phone,
+		Email:      req.Email,
+		StartDate:  req.StartDate,
+		EndDate:    req.EndDate,
+		IsActive:   req.IsActive,
+	})
 }
 
 // ToAPIError converts ValidationErrors to an APIError

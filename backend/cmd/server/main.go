@@ -38,6 +38,8 @@ func main() {
 	propertyService := service.NewPropertyService(propertyRepo)
 	timeEntryRepo := repository.NewTimeEntryRepository(database)
 	timeEntryService := service.NewTimeEntryService(timeEntryRepo, propertyRepo)
+	residenceRepo := repository.NewResidenceRepository(database)
+	residenceService := service.NewResidenceService(residenceRepo, propertyRepo)
 
 	// Setup router
 	r := chi.NewRouter()
@@ -68,7 +70,7 @@ func main() {
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
-		handlers.RegisterRoutes(r, propertyService, timeEntryService)
+		handlers.RegisterRoutes(r, propertyService, timeEntryService, residenceService)
 	})
 
 	// Start server

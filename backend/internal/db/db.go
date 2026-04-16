@@ -103,6 +103,43 @@ func createTables(db *sql.DB) error {
 		db.Exec(alterSQL) // Ignore error if column already exists
 	}
 
+	// Create residences table (tenant/lease history)
+	if dbURL != "" {
+		// Postgres
+		createResidencesSQL := `CREATE TABLE IF NOT EXISTS residences (
+			id SERIAL PRIMARY KEY,
+			property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+			name VARCHAR(255) NOT NULL,
+			phone TEXT,
+			email TEXT,
+			start_date DATE NOT NULL,
+			end_date DATE NULL,
+			is_active BOOLEAN NOT NULL DEFAULT TRUE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`
+		if _, err := db.Exec(createResidencesSQL); err != nil {
+			return fmt.Errorf("failed to create residences table: %w", err)
+		}
+	} else {
+		// SQLite
+		createResidencesSQL := `CREATE TABLE IF NOT EXISTS residences (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+			name TEXT NOT NULL,
+			phone TEXT,
+			email TEXT,
+			start_date DATE NOT NULL,
+			end_date DATE NULL,
+			is_active INTEGER NOT NULL DEFAULT 1,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`
+		if _, err := db.Exec(createResidencesSQL); err != nil {
+			return fmt.Errorf("failed to create residences table: %w", err)
+		}
+	}
+
 	// Create time_entries table
 	if dbURL != "" {
 		// Postgres
