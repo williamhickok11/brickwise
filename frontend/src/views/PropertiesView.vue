@@ -1,79 +1,116 @@
 <template>
-  <div class="properties">
-    <div class="header">
-      <h2>Properties</h2>
-      <router-link
+  <div class="page-view properties">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Properties</h1>
+        <p class="page-subtitle">Manage your rental portfolio</p>
+      </div>
+      <Button
         v-if="!showAddForm"
-        :to="{ path: '/properties', query: { ...route.query, add: '1' } }"
-        class="btn btn-primary"
-      >
-        Add Property
-      </router-link>
-      <button
+        label="Add Property"
+        icon="pi pi-plus"
+        size="large"
+        @click="openForm"
+      />
+      <Button
         v-else
-        type="button"
+        label="Cancel"
+        icon="pi pi-times"
+        severity="secondary"
+        size="large"
+        outlined
         @click="closeForm"
-        class="btn btn-primary"
-      >
-        Cancel
-      </button>
+      />
     </div>
 
-    <form v-if="showAddForm" @submit.prevent="handleSubmit" class="property-form">
-      <input
-        v-model="form.name"
-        type="text"
-        placeholder="Property Name"
-        required
-        class="input"
-      />
-      <input
-        v-model="form.address"
-        type="text"
-        placeholder="Address"
-        required
-        class="input"
-      />
-      <select v-model="form.property_type" required class="input">
-        <option value="">Select Type</option>
-        <option value="residential">Residential</option>
-        <option value="commercial">Commercial</option>
-        <option value="mixed">Mixed Use</option>
-      </select>
-      <input
-        v-model.number="form.default_mileage"
-        type="number"
-        step="0.1"
-        min="0"
-        placeholder="Default Mileage (round trip)"
-        class="input"
-      />
-      <button type="submit" class="btn btn-primary" :disabled="store.loading">
-        {{ store.loading ? 'Creating...' : 'Create' }}
-      </button>
-    </form>
+    <Message v-if="store.error" severity="error" class="mb-3" :closable="false">
+      {{ store.error }}
+    </Message>
 
-    <div v-if="store.error" class="error">{{ store.error }}</div>
+    <Card v-if="showAddForm" class="mb-4">
+      <template #title>New property</template>
+      <template #content>
+        <form class="property-form" @submit.prevent="handleSubmit">
+          <div class="form-stack">
+            <FloatLabel>
+              <InputText id="name" v-model="form.name" class="w-full" required fluid />
+              <label for="name">Property name</label>
+            </FloatLabel>
+            <FloatLabel>
+              <InputText id="address" v-model="form.address" class="w-full" required fluid />
+              <label for="address">Address</label>
+            </FloatLabel>
+            <FloatLabel>
+              <Select
+                id="type"
+                v-model="form.property_type"
+                :options="propertyTypes"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select type"
+                class="w-full"
+                fluid
+              />
+              <label for="type">Property type</label>
+            </FloatLabel>
+            <FloatLabel>
+              <InputNumber
+                id="mileage"
+                v-model="form.default_mileage"
+                :min="0"
+                :maxFractionDigits="1"
+                class="w-full"
+                fluid
+              />
+              <label for="mileage">Default mileage (round trip)</label>
+            </FloatLabel>
+          </div>
+          <Button
+            type="submit"
+            label="Create property"
+            icon="pi pi-check"
+            size="large"
+            class="mt-3 w-full"
+            :loading="store.loading"
+          />
+        </form>
+      </template>
+    </Card>
 
-    <div v-if="store.loading && properties.length === 0" class="loading">Loading...</div>
+    <div v-if="store.loading && properties.length === 0" class="state-block">
+      <ProgressSpinner />
+      <p>Loading properties…</p>
+    </div>
 
-    <div v-else-if="properties.length === 0" class="empty">No properties yet. Add one above!</div>
+    <Card v-else-if="properties.length === 0">
+      <template #content>
+        <div class="empty-state">
+          <i class="pi pi-building empty-icon" aria-hidden="true" />
+          <p>No properties yet. Add your first property to get started.</p>
+        </div>
+      </template>
+    </Card>
 
     <div v-else class="property-list">
-      <div v-for="property in properties" :key="property.id" class="property-card">
-        <div class="property-info">
-          <h3>{{ property.name }}</h3>
-          <p class="address">{{ property.address }}</p>
-          <span class="badge">{{ property.property_type }}</span>
-        </div>
-        <button
-          @click="handleDelete(property.id)"
-          class="btn btn-danger"
-          :disabled="store.loading"
-        >
-          Delete
-        </button>
-      </div>
+      <Card v-for="property in properties" :key="property.id" class="property-card">
+        <template #content>
+          <div class="property-row">
+            <div>
+              <h3 class="property-name">{{ property.name }}</h3>
+              <p class="property-address">{{ property.address }}</p>
+              <Tag :value="property.property_type" severity="secondary" class="capitalize" />
+            </div>
+            <Button
+              icon="pi pi-trash"
+              severity="danger"
+              outlined
+              aria-label="Delete property"
+              :loading="store.loading"
+              @click="confirmDelete(property.id)"
+            />
+          </div>
+        </template>
+      </Card>
     </div>
   </div>
 </template>
@@ -81,12 +118,32 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
+import Button from 'primevue/button'
+import Card from 'primevue/card'
+import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
+import Select from 'primevue/select'
+import FloatLabel from 'primevue/floatlabel'
+import Message from 'primevue/message'
+import Tag from 'primevue/tag'
+import ProgressSpinner from 'primevue/progressspinner'
 import { usePropertyStore } from '@/stores/property'
 import type { CreatePropertyRequest } from '@/types/property'
 
 const route = useRoute()
 const router = useRouter()
 const store = usePropertyStore()
+const confirm = useConfirm()
+const toast = useToast()
+
+const propertyTypes = [
+  { label: 'Residential', value: 'residential' },
+  { label: 'Commercial', value: 'commercial' },
+  { label: 'Mixed use', value: 'mixed' },
+]
+
 const form = ref<CreatePropertyRequest>({
   name: '',
   address: '',
@@ -95,12 +152,15 @@ const form = ref<CreatePropertyRequest>({
 })
 
 const properties = computed(() => store.properties ?? [])
-/** Driven by URL so form visibility survives remounts/HMR. */
 const showAddForm = computed(() => route.query.add === '1')
 
 onMounted(() => {
   store.fetchProperties()
 })
+
+function openForm() {
+  router.push({ path: '/properties', query: { ...route.query, add: '1' } })
+}
 
 function closeForm() {
   const q = { ...route.query }
@@ -113,106 +173,42 @@ async function handleSubmit() {
     await store.createProperty(form.value)
     form.value = { name: '', address: '', property_type: '', default_mileage: 0 }
     closeForm()
-  } catch (err) {
+    toast.add({ severity: 'success', summary: 'Property created', life: 3000 })
+  } catch {
     // Error handled by store
   }
 }
 
-async function handleDelete(id: number) {
-  if (confirm('Are you sure you want to delete this property?')) {
-    await store.deleteProperty(id)
-  }
+function confirmDelete(id: number) {
+  confirm.require({
+    message: 'Are you sure you want to delete this property?',
+    header: 'Delete property',
+    icon: 'pi pi-exclamation-triangle',
+    rejectLabel: 'Cancel',
+    acceptLabel: 'Delete',
+    acceptClass: 'p-button-danger',
+    accept: async () => {
+      await store.deleteProperty(id)
+      toast.add({ severity: 'success', summary: 'Property deleted', life: 3000 })
+    },
+  })
 }
 </script>
 
 <style scoped>
-.properties {
-  padding: 1rem;
-  padding-bottom: 80px; /* Space for bottom nav */
-}
-
-@media (min-width: 768px) {
-  .properties {
-    padding: 2rem;
-    padding-bottom: 2rem;
-  }
-}
-
-.header {
+.page-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-}
-
-.header h2 {
-  margin: 0;
-}
-
-.property-form {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  display: flex;
+  align-items: flex-start;
   gap: 1rem;
+  margin-bottom: 1.5rem;
   flex-wrap: wrap;
 }
 
-.input {
-  flex: 1;
-  min-width: 200px;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #3498db;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2980b9;
-}
-
-.btn-danger {
-  background: #e74c3c;
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background: #c0392b;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.error {
-  background: #fee;
-  color: #c33;
-  padding: 1rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-}
-
-.loading,
-.empty {
-  text-align: center;
-  padding: 3rem;
-  color: #666;
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .property-list {
@@ -220,31 +216,58 @@ async function handleDelete(id: number) {
   gap: 1rem;
 }
 
-.property-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
+.property-row {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.property-name {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.property-address {
+  margin: 0 0 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.state-block,
+.empty-state {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
 }
 
-.property-info h3 {
-  margin: 0 0 0.5rem 0;
+.empty-icon {
+  font-size: 2.5rem;
+  color: var(--p-primary-300);
 }
 
-.address {
-  color: #666;
-  margin-bottom: 0.5rem;
-}
-
-.badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  background: #ecf0f1;
-  border-radius: 12px;
-  font-size: 0.875rem;
+.capitalize {
   text-transform: capitalize;
+}
+
+@media (min-width: 768px) {
+  .property-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .form-stack {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  .form-stack > :first-child,
+  .form-stack > :nth-child(2) {
+    grid-column: span 1;
+  }
 }
 </style>

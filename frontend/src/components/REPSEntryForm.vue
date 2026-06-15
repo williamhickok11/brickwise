@@ -1,154 +1,171 @@
 <template>
   <div class="entry-form">
-    <h2>{{ editing ? 'Edit Entry' : 'Add Time Entry' }}</h2>
+    <h2 class="form-title">{{ editing ? 'Edit entry' : 'Add time entry' }}</h2>
 
-    <div class="form-group">
-      <label>Date</label>
-      <div class="date-inputs">
-        <input
-          v-model="form.date"
-          type="date"
-          class="input"
-          required
-        />
-        <button
+    <div class="form-stack">
+      <div class="date-row">
+        <FloatLabel class="flex-1">
+          <DatePicker
+            id="entry-date"
+            v-model="dateModel"
+            dateFormat="yy-mm-dd"
+            showIcon
+            fluid
+            class="w-full"
+          />
+          <label for="entry-date">Date</label>
+        </FloatLabel>
+        <Button
           type="button"
+          label="Yesterday"
+          severity="secondary"
+          outlined
+          size="large"
           @click="setYesterday"
-          class="btn btn-secondary"
-        >
-          Yesterday
-        </button>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>Property</label>
-      <select v-model="form.property_id" class="input">
-        <option :value="null">General</option>
-        <option
-          v-for="property in properties"
-          :key="property.id"
-          :value="property.id"
-        >
-          {{ property.name }}
-        </option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label>Category</label>
-      <div class="category-buttons">
-        <button
-          v-for="category in CATEGORIES"
-          :key="category"
-          type="button"
-          @click="form.category = category"
-          :class="['btn', 'btn-category', { active: form.category === category }]"
-        >
-          {{ category }}
-        </button>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label>Hours</label>
-      <input
-        v-model.number="form.hours"
-        type="number"
-        step="0.25"
-        min="0"
-        max="24"
-        class="input"
-        placeholder="0.0"
-        required
-      />
-    </div>
-
-    <div class="form-group">
-      <label>Description</label>
-      <div class="description-input">
-        <textarea
-          v-model="form.description"
-          class="input textarea"
-          placeholder="Describe the work performed..."
-          rows="3"
-          required
         />
-        <button
+      </div>
+
+      <FloatLabel>
+        <Select
+          id="entry-property"
+          v-model="form.property_id"
+          :options="propertyOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Property"
+          fluid
+          class="w-full"
+        />
+        <label for="entry-property">Property</label>
+      </FloatLabel>
+
+      <div>
+        <label class="field-label">Category</label>
+        <div class="category-grid">
+          <Button
+            v-for="category in CATEGORIES"
+            :key="category"
+            type="button"
+            :label="category"
+            :severity="form.category === category ? undefined : 'secondary'"
+            :outlined="form.category !== category"
+            size="large"
+            class="category-btn"
+            @click="form.category = category"
+          />
+        </div>
+      </div>
+
+      <FloatLabel>
+        <InputNumber
+          id="entry-hours"
+          v-model="form.hours"
+          :min="0"
+          :max="24"
+          :minFractionDigits="0"
+          :maxFractionDigits="2"
+          :step="0.25"
+          fluid
+          class="w-full"
+        />
+        <label for="entry-hours">Hours</label>
+      </FloatLabel>
+
+      <div class="description-wrap">
+        <FloatLabel>
+          <Textarea
+            id="entry-description"
+            v-model="form.description"
+            rows="3"
+            fluid
+            class="w-full"
+            required
+          />
+          <label for="entry-description">Description</label>
+        </FloatLabel>
+        <Button
+          v-if="isVoiceSupported"
           type="button"
+          :icon="isRecording ? 'pi pi-stop-circle' : 'pi pi-microphone'"
+          :label="isRecording ? 'Stop' : 'Voice'"
+          :severity="isRecording ? 'danger' : 'secondary'"
+          class="voice-btn"
+          size="large"
           @click="toggleVoiceInput"
-          :class="['btn', 'btn-voice', { recording: isRecording }]"
-          :disabled="!isVoiceSupported"
-        >
-          {{ isRecording ? '🎤 Recording...' : '🎤 Voice' }}
-        </button>
+        />
+      </div>
+
+      <FloatLabel>
+        <InputText id="entry-notes" v-model="form.notes" fluid class="w-full" />
+        <label for="entry-notes">Notes (optional)</label>
+      </FloatLabel>
+
+      <div class="mileage-row">
+        <div class="checkbox-row">
+          <Checkbox v-model="form.full_drive" inputId="full-drive" binary @change="handleFullDriveChange" />
+          <label for="full-drive">Full drive</label>
+        </div>
+        <FloatLabel v-if="form.full_drive" class="flex-1">
+          <InputNumber
+            id="entry-mileage"
+            v-model="form.mileage"
+            :min="0"
+            :maxFractionDigits="1"
+            fluid
+            class="w-full"
+          />
+          <label for="entry-mileage">Mileage</label>
+        </FloatLabel>
       </div>
     </div>
 
-    <div class="form-group">
-      <label>Notes (optional)</label>
-      <input
-        v-model="form.notes"
-        type="text"
-        class="input"
-        placeholder="Additional notes..."
-      />
-    </div>
-
-    <div class="form-group">
-      <label class="checkbox-label">
-        <input
-          v-model="form.full_drive"
-          type="checkbox"
-          @change="handleFullDriveChange"
-        />
-        <span>Full Drive</span>
-      </label>
-      <input
-        v-if="form.full_drive"
-        v-model.number="form.mileage"
-        type="number"
-        step="0.1"
-        min="0"
-        class="input"
-        placeholder="Mileage"
-      />
-    </div>
-
-    <div v-if="error" class="error">{{ error }}</div>
+    <Message v-if="error" severity="error" class="mt-3" :closable="false">{{ error }}</Message>
 
     <div class="form-actions">
-      <button
+      <Button
         v-if="!editing"
         type="button"
+        label="Save & add another"
+        icon="pi pi-plus"
+        size="large"
+        class="action-btn"
+        :loading="loading"
         @click="handleSaveAndAddAnother"
-        class="btn btn-primary"
-        :disabled="loading"
-      >
-        {{ loading ? 'Saving...' : 'Save & Add Another' }}
-      </button>
-      <button
+      />
+      <Button
         type="button"
+        :label="loading ? 'Saving…' : editing ? 'Update' : 'Save & done'"
+        icon="pi pi-check"
+        size="large"
+        class="action-btn"
+        :loading="loading"
         @click="handleSave"
-        class="btn btn-primary"
-        :disabled="loading"
-      >
-        {{ loading ? 'Saving...' : editing ? 'Update' : 'Save & Done' }}
-      </button>
-      <button
+      />
+      <Button
         type="button"
-        @click="$emit('cancel')"
-        class="btn btn-secondary"
+        label="Cancel"
+        severity="secondary"
+        outlined
+        size="large"
+        class="action-btn"
         :disabled="loading"
-      >
-        Cancel
-      </button>
+        @click="$emit('cancel')"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
+import DatePicker from 'primevue/datepicker'
+import FloatLabel from 'primevue/floatlabel'
+import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
+import Message from 'primevue/message'
+import Select from 'primevue/select'
+import Textarea from 'primevue/textarea'
 import { usePropertyStore } from '@/stores/property'
 import { CATEGORIES } from '@/types/time_entry'
 import type { CreateTimeEntryRequest, UpdateTimeEntryRequest, TimeEntry } from '@/types/time_entry'
@@ -170,7 +187,7 @@ const propertyStore = usePropertyStore()
 const loading = ref(false)
 const error = ref<string | null>(null)
 const isRecording = ref(false)
-const recognition = ref<any | null>(null)
+const recognition = ref<SpeechRecognition | null>(null)
 
 const editing = computed(() => !!props.entry)
 
@@ -185,7 +202,23 @@ const form = ref<CreateTimeEntryRequest>({
   full_drive: false,
 })
 
+const dateModel = computed({
+  get: () => {
+    const [y, m, d] = form.value.date.split('-').map(Number)
+    return new Date(y, m - 1, d)
+  },
+  set: (val: Date | null) => {
+    if (!val) return
+    form.value.date = val.toISOString().split('T')[0]
+  },
+})
+
 const properties = computed(() => propertyStore.properties)
+
+const propertyOptions = computed(() => [
+  { label: 'General', value: null },
+  ...properties.value.map((p) => ({ label: p.name, value: p.id })),
+])
 
 const isVoiceSupported = computed(() => {
   return 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window
@@ -206,15 +239,15 @@ onMounted(() => {
   }
 
   if (isVoiceSupported.value) {
-    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
-    recognition.value = new SpeechRecognition()
+    const SpeechRecognitionCtor = window.SpeechRecognition ?? window.webkitSpeechRecognition
+    if (!SpeechRecognitionCtor) return
+    recognition.value = new SpeechRecognitionCtor()
     recognition.value.continuous = false
     recognition.value.interimResults = false
     recognition.value.lang = 'en-US'
 
-    recognition.value.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript
-      form.value.description = transcript
+    recognition.value.onresult = (event: SpeechRecognitionEvent) => {
+      form.value.description = event.results[0][0].transcript
       isRecording.value = false
     }
 
@@ -243,7 +276,7 @@ watch(
     if (newId !== undefined) {
       form.value.property_id = newId
     }
-  }
+  },
 )
 
 watch(
@@ -252,7 +285,7 @@ watch(
     if (newDate) {
       form.value.date = newDate
     }
-  }
+  },
 )
 
 function setYesterday() {
@@ -293,7 +326,6 @@ function handleSave() {
 function handleSaveAndAddAnother() {
   error.value = null
   emit('saveAndAddAnother', form.value)
-  // Reset form but keep property and date
   const savedPropertyId = form.value.property_id
   const savedDate = form.value.date
   form.value = {
@@ -311,160 +343,85 @@ function handleSaveAndAddAnother() {
 
 <style scoped>
 .entry-form {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  max-width: 600px;
-  margin: 0 auto;
+  padding: 0.25rem;
 }
 
-h2 {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.5rem;
+.form-title {
+  margin: 0 0 1.25rem;
+  font-size: 1.25rem;
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
-label {
+.field-label {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
-.date-inputs {
+.date-row {
   display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.5rem;
 }
 
-.input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-family: inherit;
+.category-btn {
+  justify-content: flex-start;
+  text-align: left;
 }
 
-.textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.description-input {
+.description-wrap {
   position: relative;
 }
 
-.btn-voice {
+.voice-btn {
   position: absolute;
-  bottom: 0.5rem;
   right: 0.5rem;
-  padding: 0.5rem;
-  font-size: 0.875rem;
+  bottom: 0.5rem;
 }
 
-.btn-voice.recording {
-  background: #e74c3c;
-  color: white;
+.mileage-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.category-buttons {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
-}
-
-.btn-category {
-  padding: 0.75rem;
-  text-align: left;
-  font-size: 0.875rem;
-  white-space: normal;
-}
-
-.btn-category.active {
-  background: #3498db;
-  color: white;
-}
-
-.checkbox-label {
+.checkbox-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  cursor: pointer;
-}
-
-.checkbox-label input[type='checkbox'] {
-  width: auto;
-  cursor: pointer;
 }
 
 .form-actions {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
-  margin-top: 2rem;
-  flex-wrap: wrap;
+  margin-top: 1.5rem;
 }
 
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex: 1;
-  min-width: 120px;
+.action-btn {
+  width: 100%;
 }
 
-.btn-primary {
-  background: #3498db;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #2980b9;
-}
-
-.btn-secondary {
-  background: #95a5a6;
-  color: white;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #7f8c8d;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.error {
-  background: #fee;
-  color: #c33;
-  padding: 1rem;
-  border-radius: 4px;
-  margin-bottom: 1rem;
-}
-
-@media (max-width: 768px) {
-  .entry-form {
-    padding: 1rem;
+@media (min-width: 768px) {
+  .category-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .category-buttons {
-    grid-template-columns: 1fr;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .btn {
-    width: 100%;
+  .mileage-row {
+    flex-direction: row;
+    align-items: flex-end;
   }
 }
 </style>

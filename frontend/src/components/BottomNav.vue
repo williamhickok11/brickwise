@@ -1,26 +1,25 @@
 <template>
-  <nav class="bottom-nav">
-    <router-link to="/dashboard" class="nav-item" active-class="active">
-      <span class="nav-icon">📊</span>
-      <span class="nav-label">Dashboard</span>
-    </router-link>
-    <router-link to="/properties" class="nav-item" active-class="active">
-      <span class="nav-icon">🏢</span>
-      <span class="nav-label">Properties</span>
-    </router-link>
-    <router-link to="/residences" class="nav-item" active-class="active">
-      <span class="nav-icon">🏠</span>
-      <span class="nav-label">Residences</span>
-    </router-link>
-    <router-link to="/reps" class="nav-item" active-class="active">
-      <span class="nav-icon">⏱️</span>
-      <span class="nav-label">REPS</span>
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <router-link
+      v-for="item in navItems"
+      :key="item.to"
+      :to="item.to"
+      class="nav-item"
+      active-class="active"
+    >
+      <i :class="['pi', item.icon]" aria-hidden="true" />
+      <span class="nav-label">{{ item.label }}</span>
     </router-link>
   </nav>
 </template>
 
 <script setup lang="ts">
-// Bottom navigation component for mobile-first design
+const navItems = [
+  { to: '/dashboard', label: 'Dashboard', icon: 'pi-chart-bar' },
+  { to: '/properties', label: 'Properties', icon: 'pi-building' },
+  { to: '/residences', label: 'Residences', icon: 'pi-home' },
+  { to: '/reps', label: 'REPS', icon: 'pi-clock' },
+] as const
 </script>
 
 <style scoped>
@@ -31,38 +30,39 @@
   right: 0;
   display: flex;
   justify-content: space-around;
-  align-items: center;
-  background: white;
-  border-top: 1px solid #e0e0e0;
-  padding: 0.5rem 0;
+  align-items: stretch;
+  background: var(--p-surface-0, #fff);
+  border-top: 1px solid var(--p-surface-200, #e2e8f0);
+  padding: 0.35rem 0 calc(0.35rem + env(safe-area-inset-bottom, 0px));
   z-index: 1000;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.08);
 }
 
 .nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 1rem;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.75rem;
+  min-height: 3.25rem;
   text-decoration: none;
-  color: #666;
+  color: var(--text-secondary);
   transition: color 0.2s;
-  min-width: 60px;
   flex: 1;
 }
 
-.nav-item.active {
-  color: #3498db;
+.nav-item .pi {
+  font-size: 1.25rem;
 }
 
-.nav-icon {
-  font-size: 1.5rem;
+.nav-item.active {
+  color: var(--p-primary-500, #1a6fb5);
 }
 
 .nav-label {
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.7rem;
+  font-weight: 600;
 }
 
 @media (min-width: 768px) {

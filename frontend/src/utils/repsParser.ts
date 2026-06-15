@@ -21,7 +21,7 @@ export function parseREPSText(text: string, defaultDate: string = getTodayDate()
   
   // Default values
   let hours = 0
-  let category = ''
+  const category = ''
   let date = defaultDate
   let mileage = 0
   let full_drive = false
