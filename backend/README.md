@@ -56,6 +56,38 @@ go run cmd/server/main.go
 DATABASE_URL="postgres://user:pass@localhost/dbname?sslmode=disable" go run cmd/server/main.go
 ```
 
+## Environment Variables
+
+| Variable | Description | Default |
+|---|---|---|
+| `PORT` | HTTP listen port | `8080` |
+| `DATABASE_URL` | Postgres connection string (omit for SQLite) | _(empty → SQLite)_ |
+| `DB_PATH` | SQLite file path | `./brickwise.db` |
+| `LOG_FORMAT` | `json` or text | text |
+| `QBO_CLIENT_ID` | Intuit app client ID | _(required for QBO)_ |
+| `QBO_CLIENT_SECRET` | Intuit app client secret | _(required for QBO)_ |
+| `QBO_REDIRECT_URI` | OAuth redirect URI registered in Intuit | `http://localhost:8080/api/v1/integrations/qbo/callback` |
+| `QBO_FRONTEND_REDIRECT` | Where to send the browser after OAuth | `http://localhost:5173/settings/quickbooks` |
+| `QBO_ENVIRONMENT` | `sandbox` or `production` | `sandbox` |
+
+### QuickBooks Online
+
+1. Create an app at [developer.intuit.com](https://developer.intuit.com/).
+2. Enable the Accounting API scope.
+3. Add the redirect URI above.
+4. Ask your bookkeeper to use **one Class per property** and code transactions to that Class.
+5. In Brickwise: **QuickBooks** → Connect → map each property to its Class → Refresh.
+
+Endpoints:
+
+- `GET /api/v1/integrations/qbo/status`
+- `GET /api/v1/integrations/qbo/connect`
+- `GET /api/v1/integrations/qbo/callback`
+- `DELETE /api/v1/integrations/qbo/disconnect`
+- `GET /api/v1/integrations/qbo/classes`
+- `PUT /api/v1/integrations/qbo/mappings`
+- `POST /api/v1/integrations/qbo/sync`
+
 ## API Endpoints
 
 - `GET /health` - Health check
@@ -64,6 +96,7 @@ DATABASE_URL="postgres://user:pass@localhost/dbname?sslmode=disable" go run cmd/
 - `POST /api/v1/properties` - Create property
 - `PUT /api/v1/properties/{id}` - Update property
 - `DELETE /api/v1/properties/{id}` - Delete property
+- `GET /api/v1/dashboard/summary` - Portfolio summary (includes QBO actuals when connected)
 
 ## Design Tradeoffs
 
