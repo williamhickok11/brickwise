@@ -40,8 +40,8 @@ func (r *SQLResidenceRepository) Create(residence *models.Residence) error {
 			isActiveInt = 1
 		}
 
-		query := `INSERT INTO residences (property_id, name, phone, email, start_date, end_date, is_active)
-		          VALUES ($1, $2, $3, $4, $5, $6, $7)`
+		query := `INSERT INTO residences (property_id, name, phone, email, start_date, end_date, is_active, monthly_rent)
+		          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 		result, err := r.db.Exec(
 			query,
 			residence.PropertyID,
@@ -51,6 +51,7 @@ func (r *SQLResidenceRepository) Create(residence *models.Residence) error {
 			residence.StartDate.Time,
 			endDateVal,
 			isActiveInt,
+			residence.MonthlyRent,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to create residence: %w", err)
@@ -68,8 +69,8 @@ func (r *SQLResidenceRepository) Create(residence *models.Residence) error {
 		).Scan(&residence.CreatedAt, &residence.UpdatedAt)
 	}
 
-	query := `INSERT INTO residences (property_id, name, phone, email, start_date, end_date, is_active)
-	          VALUES ($1, $2, $3, $4, $5, $6, $7)
+	query := `INSERT INTO residences (property_id, name, phone, email, start_date, end_date, is_active, monthly_rent)
+	          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	          RETURNING id, created_at, updated_at`
 
 	return r.db.QueryRow(
@@ -81,12 +82,13 @@ func (r *SQLResidenceRepository) Create(residence *models.Residence) error {
 		residence.StartDate.Time,
 		endDateVal,
 		residence.IsActive,
+		residence.MonthlyRent,
 	).Scan(&residence.ID, &residence.CreatedAt, &residence.UpdatedAt)
 }
 
 func (r *SQLResidenceRepository) GetByID(id int) (*models.Residence, error) {
 	residence := &models.Residence{}
-	query := `SELECT id, property_id, name, phone, email, start_date, end_date, is_active, created_at, updated_at
+	query := `SELECT id, property_id, name, phone, email, start_date, end_date, is_active, monthly_rent, created_at, updated_at
 	          FROM residences
 	          WHERE id = $1`
 
@@ -103,6 +105,7 @@ func (r *SQLResidenceRepository) GetByID(id int) (*models.Residence, error) {
 			&startDate,
 			&endDate,
 			&isActiveInt,
+			&residence.MonthlyRent,
 			&residence.CreatedAt,
 			&residence.UpdatedAt,
 		); err != nil {
@@ -134,6 +137,7 @@ func (r *SQLResidenceRepository) GetByID(id int) (*models.Residence, error) {
 		&startDate,
 		&endDate,
 		&residence.IsActive,
+		&residence.MonthlyRent,
 		&residence.CreatedAt,
 		&residence.UpdatedAt,
 	); err != nil {
@@ -177,7 +181,7 @@ func (r *SQLResidenceRepository) GetAll(filter *models.ResidenceFilter) ([]*mode
 		whereClause = "WHERE " + joinConditions(conditions, " AND ")
 	}
 
-	query := fmt.Sprintf(`SELECT id, property_id, name, phone, email, start_date, end_date, is_active, created_at, updated_at
+	query := fmt.Sprintf(`SELECT id, property_id, name, phone, email, start_date, end_date, is_active, monthly_rent, created_at, updated_at
 	          FROM residences
 	          %s
 	          ORDER BY start_date DESC, created_at DESC`, whereClause)
@@ -205,6 +209,7 @@ func (r *SQLResidenceRepository) GetAll(filter *models.ResidenceFilter) ([]*mode
 				&startDate,
 				&endDate,
 				&isActiveInt,
+				&residence.MonthlyRent,
 				&residence.CreatedAt,
 				&residence.UpdatedAt,
 			); err != nil {
@@ -231,6 +236,7 @@ func (r *SQLResidenceRepository) GetAll(filter *models.ResidenceFilter) ([]*mode
 				&startDate,
 				&endDate,
 				&residence.IsActive,
+				&residence.MonthlyRent,
 				&residence.CreatedAt,
 				&residence.UpdatedAt,
 			); err != nil {
@@ -270,9 +276,9 @@ func (r *SQLResidenceRepository) Update(residence *models.Residence) error {
 
 		query := `UPDATE residences
 		          SET property_id = $1, name = $2, phone = $3, email = $4,
-		              start_date = $5, end_date = $6, is_active = $7,
+		              start_date = $5, end_date = $6, is_active = $7, monthly_rent = $8,
 		              updated_at = CURRENT_TIMESTAMP
-		          WHERE id = $8`
+		          WHERE id = $9`
 
 		result, err := r.db.Exec(
 			query,
@@ -283,6 +289,7 @@ func (r *SQLResidenceRepository) Update(residence *models.Residence) error {
 			residence.StartDate.Time,
 			endDateVal,
 			isActiveInt,
+			residence.MonthlyRent,
 			residence.ID,
 		)
 		if err != nil {
@@ -303,9 +310,9 @@ func (r *SQLResidenceRepository) Update(residence *models.Residence) error {
 
 	query := `UPDATE residences
 	          SET property_id = $1, name = $2, phone = $3, email = $4,
-	              start_date = $5, end_date = $6, is_active = $7,
+	              start_date = $5, end_date = $6, is_active = $7, monthly_rent = $8,
 	              updated_at = CURRENT_TIMESTAMP
-	          WHERE id = $8
+	          WHERE id = $9
 	          RETURNING updated_at`
 
 	if err := r.db.QueryRow(
@@ -317,6 +324,7 @@ func (r *SQLResidenceRepository) Update(residence *models.Residence) error {
 		residence.StartDate.Time,
 		endDateVal,
 		residence.IsActive,
+		residence.MonthlyRent,
 		residence.ID,
 	).Scan(&residence.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {

@@ -3,7 +3,9 @@ package service
 import (
 	"fmt"
 	"testing"
+	"time"
 
+	"brickwise/backend/internal/errors"
 	"brickwise/backend/internal/models"
 )
 
@@ -56,6 +58,16 @@ func (m *mockPropertyRepository) Delete(id int) error {
 		return fmt.Errorf("property with id %d not found", id)
 	}
 	delete(m.properties, id)
+	return nil
+}
+
+func (m *mockPropertyRepository) UpdateValue(id int, currentValue float64, valueUpdatedAt *time.Time) error {
+	property, ok := m.properties[id]
+	if !ok {
+		return fmt.Errorf("property with id %d not found", id)
+	}
+	property.CurrentValue = currentValue
+	property.ValueUpdatedAt = valueUpdatedAt
 	return nil
 }
 

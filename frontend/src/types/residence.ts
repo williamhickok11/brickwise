@@ -7,6 +7,7 @@ export interface Residence {
   start_date: string
   end_date: string | null
   is_active: boolean
+  monthly_rent: number
   created_at: string
   updated_at: string
 }
@@ -19,6 +20,7 @@ export interface CreateResidenceRequest {
   start_date: string
   end_date?: string | null
   is_active: boolean
+  monthly_rent?: number
 }
 
 export interface UpdateResidenceRequest {
@@ -29,6 +31,7 @@ export interface UpdateResidenceRequest {
   start_date: string
   end_date?: string | null
   is_active: boolean
+  monthly_rent?: number
 }
 
 export interface ResidenceFilter {

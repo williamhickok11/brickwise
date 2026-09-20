@@ -55,7 +55,8 @@ func (s *ResidenceService) CreateResidence(req *models.CreateResidenceRequest) (
 		Email:      req.Email,
 		StartDate:  models.Date{Time: startDate},
 		EndDate:    endDate,
-		IsActive:   req.IsActive,
+		IsActive:    req.IsActive,
+		MonthlyRent: req.MonthlyRent,
 	}
 
 	if err := s.repo.Create(residence); err != nil {
@@ -113,7 +114,8 @@ func (s *ResidenceService) UpdateResidence(id int, req *models.UpdateResidenceRe
 		Email:      req.Email,
 		StartDate:  models.Date{Time: startDate},
 		EndDate:    endDate,
-		IsActive:   req.IsActive,
+		IsActive:    req.IsActive,
+		MonthlyRent: req.MonthlyRent,
 	}
 
 	if err := s.repo.Update(residence); err != nil {

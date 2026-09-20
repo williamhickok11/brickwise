@@ -103,6 +103,25 @@ func createTables(db *sql.DB) error {
 		db.Exec(alterSQL) // Ignore error if column already exists
 	}
 
+	// Add financial columns to properties
+	if dbURL != "" {
+		alterFinancialSQL := `DO $$
+		BEGIN
+			IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+				WHERE table_name='properties' AND column_name='current_value') THEN
+				ALTER TABLE properties ADD COLUMN current_value REAL DEFAULT 0;
+			END IF;
+			IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+				WHERE table_name='properties' AND column_name='value_updated_at') THEN
+				ALTER TABLE properties ADD COLUMN value_updated_at TIMESTAMP NULL;
+			END IF;
+		END $$;`
+		db.Exec(alterFinancialSQL)
+	} else {
+		db.Exec(`ALTER TABLE properties ADD COLUMN current_value REAL DEFAULT 0`)
+		db.Exec(`ALTER TABLE properties ADD COLUMN value_updated_at DATETIME NULL`)
+	}
+
 	// Create residences table (tenant/lease history)
 	if dbURL != "" {
 		// Postgres
@@ -137,6 +156,59 @@ func createTables(db *sql.DB) error {
 		)`
 		if _, err := db.Exec(createResidencesSQL); err != nil {
 			return fmt.Errorf("failed to create residences table: %w", err)
+		}
+	}
+
+	// Add monthly_rent to residences
+	if dbURL != "" {
+		alterRentSQL := `DO $$
+		BEGIN
+			IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+				WHERE table_name='residences' AND column_name='monthly_rent') THEN
+				ALTER TABLE residences ADD COLUMN monthly_rent REAL DEFAULT 0;
+			END IF;
+		END $$;`
+		db.Exec(alterRentSQL)
+	} else {
+		db.Exec(`ALTER TABLE residences ADD COLUMN monthly_rent REAL DEFAULT 0`)
+	}
+
+	// Create mortgages table (1:1 optional with property)
+	if dbURL != "" {
+		createMortgagesSQL := `CREATE TABLE IF NOT EXISTS mortgages (
+			id SERIAL PRIMARY KEY,
+			property_id INTEGER NOT NULL UNIQUE REFERENCES properties(id) ON DELETE CASCADE,
+			original_loan REAL DEFAULT 0,
+			current_balance REAL DEFAULT 0,
+			interest_rate REAL DEFAULT 0,
+			monthly_payment REAL DEFAULT 0,
+			monthly_pi REAL DEFAULT 0,
+			balance_as_of DATE NULL,
+			lender TEXT,
+			notes TEXT,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`
+		if _, err := db.Exec(createMortgagesSQL); err != nil {
+			return fmt.Errorf("failed to create mortgages table: %w", err)
+		}
+	} else {
+		createMortgagesSQL := `CREATE TABLE IF NOT EXISTS mortgages (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			property_id INTEGER NOT NULL UNIQUE REFERENCES properties(id) ON DELETE CASCADE,
+			original_loan REAL DEFAULT 0,
+			current_balance REAL DEFAULT 0,
+			interest_rate REAL DEFAULT 0,
+			monthly_payment REAL DEFAULT 0,
+			monthly_pi REAL DEFAULT 0,
+			balance_as_of DATE NULL,
+			lender TEXT,
+			notes TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`
+		if _, err := db.Exec(createMortgagesSQL); err != nil {
+			return fmt.Errorf("failed to create mortgages table: %w", err)
 		}
 	}
 
@@ -179,5 +251,85 @@ func createTables(db *sql.DB) error {
 		}
 	}
 
+	if err := createQBOTables(db, dbURL != ""); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createQBOTables(db *sql.DB, isPostgres bool) error {
+	if isPostgres {
+		stmts := []string{
+			`CREATE TABLE IF NOT EXISTS qbo_connections (
+				id SERIAL PRIMARY KEY,
+				realm_id TEXT NOT NULL,
+				access_token TEXT NOT NULL,
+				refresh_token TEXT NOT NULL,
+				access_token_expires_at TIMESTAMP NOT NULL,
+				refresh_token_expires_at TIMESTAMP NOT NULL,
+				connected_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+			)`,
+			`CREATE TABLE IF NOT EXISTS qbo_oauth_states (
+				state TEXT PRIMARY KEY,
+				expires_at TIMESTAMP NOT NULL
+			)`,
+			`CREATE TABLE IF NOT EXISTS property_qbo_links (
+				property_id INTEGER PRIMARY KEY REFERENCES properties(id) ON DELETE CASCADE,
+				qbo_class_id TEXT NOT NULL,
+				qbo_class_name TEXT NOT NULL DEFAULT '',
+				updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+			)`,
+			`CREATE TABLE IF NOT EXISTS qbo_cash_flow_cache (
+				property_id INTEGER PRIMARY KEY REFERENCES properties(id) ON DELETE CASCADE,
+				period_start DATE NOT NULL,
+				period_end DATE NOT NULL,
+				net_amount REAL NOT NULL DEFAULT 0,
+				synced_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+			)`,
+		}
+		for _, stmt := range stmts {
+			if _, err := db.Exec(stmt); err != nil {
+				return fmt.Errorf("failed to create qbo tables: %w", err)
+			}
+		}
+		return nil
+	}
+
+	stmts := []string{
+		`CREATE TABLE IF NOT EXISTS qbo_connections (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			realm_id TEXT NOT NULL,
+			access_token TEXT NOT NULL,
+			refresh_token TEXT NOT NULL,
+			access_token_expires_at DATETIME NOT NULL,
+			refresh_token_expires_at DATETIME NOT NULL,
+			connected_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS qbo_oauth_states (
+			state TEXT PRIMARY KEY,
+			expires_at DATETIME NOT NULL
+		)`,
+		`CREATE TABLE IF NOT EXISTS property_qbo_links (
+			property_id INTEGER PRIMARY KEY REFERENCES properties(id) ON DELETE CASCADE,
+			qbo_class_id TEXT NOT NULL,
+			qbo_class_name TEXT NOT NULL DEFAULT '',
+			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS qbo_cash_flow_cache (
+			property_id INTEGER PRIMARY KEY REFERENCES properties(id) ON DELETE CASCADE,
+			period_start DATE NOT NULL,
+			period_end DATE NOT NULL,
+			net_amount REAL NOT NULL DEFAULT 0,
+			synced_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+	}
+	for _, stmt := range stmts {
+		if _, err := db.Exec(stmt); err != nil {
+			return fmt.Errorf("failed to create qbo tables: %w", err)
+		}
+	}
 	return nil
 }

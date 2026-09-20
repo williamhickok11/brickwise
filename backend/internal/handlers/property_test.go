@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"brickwise/backend/internal/models"
-	"brickwise/backend/internal/repository"
 	"brickwise/backend/internal/service"
 
 	"github.com/go-chi/chi/v5"
@@ -67,10 +67,18 @@ func (m *mockPropertyRepository) Delete(id int) error {
 	return nil
 }
 
+func (m *mockPropertyRepository) UpdateValue(id int, currentValue float64, valueUpdatedAt *time.Time) error {
+	property, ok := m.properties[id]
+	if !ok {
+		return fmt.Errorf("property with id %d not found", id)
+	}
+	property.CurrentValue = currentValue
+	property.ValueUpdatedAt = valueUpdatedAt
+	return nil
+}
+
 func TestCreateProperty(t *testing.T) {
-	// Create a service with a mock repository for integration-style testing
-	// In a real scenario, you might want to use a service interface for easier mocking
-	mockRepo := &mockPropertyRepository{}
+	mockRepo := newMockPropertyRepository()
 	svc := service.NewPropertyService(mockRepo)
 	handler := NewPropertyHandler(svc)
 
@@ -102,26 +110,26 @@ func TestCreateProperty(t *testing.T) {
 }
 
 func TestGetProperty(t *testing.T) {
-	mockRepo := &mockPropertyRepository{}
+	mockRepo := newMockPropertyRepository()
 	svc := service.NewPropertyService(mockRepo)
 	
 	// Create a property first
-	req := &models.CreatePropertyRequest{
+	createReq := &models.CreatePropertyRequest{
 		Name:         "Test Property",
 		Address:      "123 Test St",
 		PropertyType: "residential",
 	}
-	property, _ := svc.CreateProperty(req)
+	property, _ := svc.CreateProperty(createReq)
 
 	handler := NewPropertyHandler(svc)
 
 	r := chi.NewRouter()
 	r.Get("/properties/{id}", handler.GetProperty)
 
-	req := httptest.NewRequest("GET", "/properties/1", nil)
+	httpReq := httptest.NewRequest("GET", "/properties/1", nil)
 	w := httptest.NewRecorder()
 
-	r.ServeHTTP(w, req)
+	r.ServeHTTP(w, httpReq)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
@@ -142,7 +150,7 @@ func TestGetProperty(t *testing.T) {
 }
 
 func TestGetPropertyNotFound(t *testing.T) {
-	mockRepo := &mockPropertyRepository{}
+	mockRepo := newMockPropertyRepository()
 	svc := service.NewPropertyService(mockRepo)
 	handler := NewPropertyHandler(svc)
 

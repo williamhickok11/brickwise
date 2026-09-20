@@ -12,9 +12,10 @@ type Residence struct {
 	Email      string   `json:"email"`
 	StartDate  Date     `json:"start_date"`
 	EndDate    *Date    `json:"end_date"`
-	IsActive   bool     `json:"is_active"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	IsActive    bool      `json:"is_active"`
+	MonthlyRent float64   `json:"monthly_rent"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type CreateResidenceRequest struct {
@@ -24,7 +25,8 @@ type CreateResidenceRequest struct {
 	Email      string  `json:"email"`
 	StartDate  string  `json:"start_date"`
 	EndDate    *string `json:"end_date"`
-	IsActive   bool    `json:"is_active"`
+	IsActive    bool    `json:"is_active"`
+	MonthlyRent float64 `json:"monthly_rent"`
 }
 
 type UpdateResidenceRequest struct {
@@ -34,7 +36,8 @@ type UpdateResidenceRequest struct {
 	Email      string  `json:"email"`
 	StartDate  string  `json:"start_date"`
 	EndDate    *string `json:"end_date"`
-	IsActive   bool    `json:"is_active"`
+	IsActive    bool    `json:"is_active"`
+	MonthlyRent float64 `json:"monthly_rent"`
 }
 
 type ResidenceFilter struct {

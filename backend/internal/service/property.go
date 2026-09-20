@@ -2,6 +2,7 @@ package service
 
 import (
 	"strings"
+	"time"
 
 	"brickwise/backend/internal/errors"
 	"brickwise/backend/internal/models"
@@ -94,4 +95,32 @@ func (s *PropertyService) DeleteProperty(id int) error {
 		return errors.Wrap(err, errors.ErrInternal)
 	}
 	return nil
+}
+
+// UpdatePropertyValue updates only the current value fields on a property.
+func (s *PropertyService) UpdatePropertyValue(id int, req *models.UpdatePropertyValueRequest) (*models.Property, error) {
+	if req.CurrentValue < 0 {
+		return nil, errors.New("INVALID_VALUE", "current_value must be non-negative", errors.ErrInvalidInput.Status)
+	}
+
+	var valueUpdatedAt *time.Time
+	if req.ValueUpdatedAt != nil && strings.TrimSpace(*req.ValueUpdatedAt) != "" {
+		parsed, err := time.Parse("2006-01-02", *req.ValueUpdatedAt)
+		if err != nil {
+			return nil, errors.New("INVALID_DATE", "value_updated_at must be in YYYY-MM-DD format", errors.ErrInvalidInput.Status)
+		}
+		valueUpdatedAt = &parsed
+	} else {
+		now := time.Now()
+		valueUpdatedAt = &now
+	}
+
+	if err := s.repo.UpdateValue(id, req.CurrentValue, valueUpdatedAt); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil, errors.ErrNotFound
+		}
+		return nil, errors.Wrap(err, errors.ErrInternal)
+	}
+
+	return s.GetProperty(id)
 }

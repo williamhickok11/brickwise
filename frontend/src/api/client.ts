@@ -1,5 +1,7 @@
 import axios from 'axios'
-import type { Property, CreatePropertyRequest } from '@/types/property'
+import type { Property, CreatePropertyRequest, UpdatePropertyValueRequest } from '@/types/property'
+import type { UpsertMortgageRequest, Mortgage } from '@/types/mortgage'
+import type { DashboardSummary } from '@/types/dashboard'
 import type {
   Residence,
   CreateResidenceRequest,
@@ -12,6 +14,7 @@ import type {
   UpdateTimeEntryRequest,
   TimeEntryFilter,
 } from '@/types/time_entry'
+import type { PropertyQBOMappingInput, QBOClass, QBOStatus, QBOSyncResult } from '@/types/qbo'
 
 const client = axios.create({
   baseURL: '/api/v1',
@@ -40,6 +43,56 @@ export const propertyApi = {
 
   delete: (id: number): Promise<void> => {
     return client.delete(`/properties/${id}`).then(() => undefined)
+  },
+
+  updateValue: (id: number, data: UpdatePropertyValueRequest): Promise<Property> => {
+    return client.put(`/properties/${id}/value`, data).then((res) => res.data)
+  },
+}
+
+export const mortgageApi = {
+  get: (propertyId: number): Promise<Mortgage> => {
+    return client.get(`/properties/${propertyId}/mortgage`).then((res) => res.data)
+  },
+
+  upsert: (propertyId: number, data: UpsertMortgageRequest): Promise<Mortgage> => {
+    return client.put(`/properties/${propertyId}/mortgage`, data).then((res) => res.data)
+  },
+
+  delete: (propertyId: number): Promise<void> => {
+    return client.delete(`/properties/${propertyId}/mortgage`).then(() => undefined)
+  },
+}
+
+export const dashboardApi = {
+  summary: (): Promise<DashboardSummary> => {
+    return client.get('/dashboard/summary').then((res) => res.data)
+  },
+}
+
+export const qboApi = {
+  status: (): Promise<QBOStatus> => {
+    return client.get('/integrations/qbo/status').then((res) => res.data)
+  },
+
+  connect: (): Promise<{ authorize_url: string }> => {
+    return client.get('/integrations/qbo/connect').then((res) => res.data)
+  },
+
+  disconnect: (): Promise<void> => {
+    return client.delete('/integrations/qbo/disconnect').then(() => undefined)
+  },
+
+  classes: (): Promise<QBOClass[]> => {
+    return client.get('/integrations/qbo/classes').then((res) => res.data)
+  },
+
+  updateMappings: (mappings: PropertyQBOMappingInput[]): Promise<QBOStatus> => {
+    return client.put('/integrations/qbo/mappings', { mappings }).then((res) => res.data)
+  },
+
+  sync: (): Promise<QBOSyncResult> => {
+    return client.post('/integrations/qbo/sync').then((res) => res.data)
   },
 }
 

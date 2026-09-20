@@ -97,6 +97,30 @@ func (h *PropertyHandler) UpdateProperty(w http.ResponseWriter, r *http.Request)
 	h.respondJSON(w, http.StatusOK, property)
 }
 
+// UpdatePropertyValue handles PUT /properties/{id}/value
+func (h *PropertyHandler) UpdatePropertyValue(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		errors.WriteJSON(w, errors.ErrInvalidInput)
+		return
+	}
+
+	var req models.UpdatePropertyValueRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Warn("Failed to decode request body", "error", err)
+		errors.WriteJSON(w, errors.ErrInvalidInput)
+		return
+	}
+
+	property, err := h.service.UpdatePropertyValue(id, &req)
+	if err != nil {
+		h.handleError(w, r, err)
+		return
+	}
+
+	h.respondJSON(w, http.StatusOK, property)
+}
+
 // DeleteProperty handles DELETE /properties/{id}
 func (h *PropertyHandler) DeleteProperty(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))

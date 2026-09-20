@@ -84,6 +84,18 @@
               <label for="r-email">Email (optional)</label>
             </FloatLabel>
             <FloatLabel>
+              <InputNumber
+                id="r-rent"
+                v-model="form.monthly_rent"
+                mode="currency"
+                currency="USD"
+                locale="en-US"
+                :min="0"
+                fluid
+              />
+              <label for="r-rent">Monthly rent</label>
+            </FloatLabel>
+            <FloatLabel>
               <DatePicker id="r-start" v-model="startDateModel" dateFormat="yy-mm-dd" showIcon fluid />
               <label for="r-start">Move-in date</label>
             </FloatLabel>
@@ -124,6 +136,7 @@
                 <div class="resident-name">{{ r.name }}</div>
                 <div class="resident-meta">
                   <span>Move-in: {{ r.start_date }}</span>
+                  <span v-if="r.monthly_rent > 0"> · Rent: {{ formatCurrency(r.monthly_rent) }}/mo</span>
                   <span v-if="r.phone"> · {{ r.phone }}</span>
                   <span v-else-if="r.email"> · {{ r.email }}</span>
                 </div>
@@ -215,6 +228,7 @@ import Checkbox from 'primevue/checkbox'
 import DatePicker from 'primevue/datepicker'
 import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
@@ -240,6 +254,7 @@ const form = ref<CreateResidenceRequest>({
   start_date: todayISO(),
   end_date: undefined,
   is_active: true,
+  monthly_rent: 0,
 })
 
 const startDateModel = computed({
@@ -267,6 +282,14 @@ function parseDate(iso: string): Date {
 
 function toISO(date: Date): string {
   return date.toISOString().split('T')[0]
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
 
 const selectedProperty = computed(() => {
@@ -313,6 +336,7 @@ function resetForm() {
     start_date: todayISO(),
     end_date: undefined,
     is_active: true,
+    monthly_rent: 0,
   }
 }
 
@@ -332,6 +356,7 @@ async function handleAddResident() {
     start_date: form.value.start_date,
     end_date: form.value.end_date || undefined,
     is_active: form.value.is_active,
+    monthly_rent: form.value.monthly_rent ?? 0,
   }
 
   await residenceStore.createResident(data)
@@ -385,6 +410,7 @@ async function confirmMoveOut() {
     start_date: r.start_date,
     end_date: moveOutEndDate.value,
     is_active: false,
+    monthly_rent: r.monthly_rent ?? 0,
   }
 
   await residenceStore.updateResident(r.id, data)

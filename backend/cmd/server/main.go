@@ -12,6 +12,7 @@ import (
 	"brickwise/backend/internal/db"
 	"brickwise/backend/internal/handlers"
 	"brickwise/backend/internal/logger"
+	"brickwise/backend/internal/qbo"
 	"brickwise/backend/internal/repository"
 	"brickwise/backend/internal/service"
 
@@ -40,6 +41,20 @@ func main() {
 	timeEntryService := service.NewTimeEntryService(timeEntryRepo, propertyRepo)
 	residenceRepo := repository.NewResidenceRepository(database)
 	residenceService := service.NewResidenceService(residenceRepo, propertyRepo)
+	mortgageRepo := repository.NewMortgageRepository(database)
+	mortgageService := service.NewMortgageService(mortgageRepo, propertyRepo)
+
+	qboCfg := qbo.LoadConfig()
+	qboClient := qbo.NewClient(qboCfg)
+	qboRepo := repository.NewQBORepository(database)
+	qboService := service.NewQBOService(qboRepo, propertyRepo, qboCfg, qboClient)
+	dashboardService := service.NewDashboardService(propertyRepo, mortgageRepo, residenceRepo, qboService)
+
+	if qboCfg.Configured() {
+		log.Info("QuickBooks Online integration configured", "environment", qboCfg.Environment)
+	} else {
+		log.Info("QuickBooks Online not configured (set QBO_CLIENT_ID and QBO_CLIENT_SECRET)")
+	}
 
 	// Setup router
 	r := chi.NewRouter()
@@ -70,7 +85,7 @@ func main() {
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
-		handlers.RegisterRoutes(r, propertyService, timeEntryService, residenceService)
+		handlers.RegisterRoutes(r, propertyService, timeEntryService, residenceService, mortgageService, dashboardService, qboService)
 	})
 
 	// Start server
@@ -83,7 +98,7 @@ func main() {
 		Addr:         ":" + port,
 		Handler:      r,
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 

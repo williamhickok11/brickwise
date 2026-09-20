@@ -1,18 +1,71 @@
 <template>
   <div class="page-view dashboard">
     <div class="welcome-section">
-      <h1 class="page-title">Welcome to Brickwise</h1>
-      <p class="page-subtitle">Manage your property portfolio with ease</p>
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Portfolio overview at a glance</p>
     </div>
 
-    <div class="stats-grid">
-      <Card v-for="stat in stats" :key="stat.label" class="stat-card">
-        <template #content>
-          <div class="stat-value">{{ stat.value }}</div>
-          <div class="stat-label">{{ stat.label }}</div>
-        </template>
-      </Card>
+    <Message v-if="dashboardStore.error" severity="error" class="mb-3" :closable="false">
+      {{ dashboardStore.error }}
+    </Message>
+
+    <div v-if="dashboardStore.loading && !dashboardStore.summary" class="state-block">
+      <ProgressSpinner />
+      <p>Loading dashboard…</p>
     </div>
+
+    <template v-else-if="dashboardStore.summary">
+      <div class="stats-grid">
+        <Card v-for="stat in stats" :key="stat.label" class="stat-card">
+          <template #content>
+            <div class="stat-value">{{ stat.value }}</div>
+            <div class="stat-label">{{ stat.label }}</div>
+            <div v-if="stat.hint" class="stat-hint">{{ stat.hint }}</div>
+          </template>
+        </Card>
+      </div>
+
+      <section class="portfolio-section">
+        <h2 class="section-title">Portfolio breakdown</h2>
+        <Card>
+          <template #content>
+            <DataTable
+              :value="dashboardStore.summary.properties"
+              stripedRows
+              responsiveLayout="scroll"
+              class="portfolio-table"
+            >
+              <Column field="name" header="Property" />
+              <Column field="current_value" header="Value">
+                <template #body="{ data }">{{ formatCurrency(data.current_value) }}</template>
+              </Column>
+              <Column field="mortgage_balance" header="Mortgage">
+                <template #body="{ data }">{{ formatCurrency(data.mortgage_balance) }}</template>
+              </Column>
+              <Column field="equity" header="Equity">
+                <template #body="{ data }">{{ formatCurrency(data.equity) }}</template>
+              </Column>
+              <Column field="monthly_rent" header="Rent/mo">
+                <template #body="{ data }">{{ formatCurrency(data.monthly_rent) }}</template>
+              </Column>
+              <Column field="monthly_pi" header="P&amp;I/mo">
+                <template #body="{ data }">{{ formatCurrency(data.monthly_pi) }}</template>
+              </Column>
+              <Column field="net_cash_flow" header="Net/mo">
+                <template #body="{ data }">
+                  <span :class="data.net_cash_flow >= 0 ? 'positive' : 'negative'">
+                    {{ formatCurrency(data.net_cash_flow) }}
+                  </span>
+                </template>
+              </Column>
+            </DataTable>
+            <p v-if="dashboardStore.summary.properties.length === 0" class="empty-mini">
+              No properties yet. Add one to see portfolio breakdown.
+            </p>
+          </template>
+        </Card>
+      </section>
+    </template>
 
     <section class="quick-actions">
       <h2 class="section-title">Quick actions</h2>
@@ -42,16 +95,35 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import Card from 'primevue/card'
-import { usePropertyStore } from '@/stores/property'
+import Column from 'primevue/column'
+import DataTable from 'primevue/datatable'
+import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
+import { useDashboardStore } from '@/stores/dashboard'
 
-const store = usePropertyStore()
-const propertyCount = computed(() => store.properties.length)
+const dashboardStore = useDashboardStore()
 
-const stats = computed(() => [
-  { value: propertyCount.value, label: 'Properties' },
-  { value: '$0', label: 'Monthly revenue' },
-  { value: '0', label: 'Active units' },
-])
+const stats = computed(() => {
+  const s = dashboardStore.summary
+  if (!s) {
+    return [
+      { value: '$0', label: 'Net worth', hint: null },
+      { value: '$0', label: 'Portfolio value', hint: null },
+      { value: '$0', label: 'Monthly revenue', hint: null },
+      { value: '$0', label: 'Est. cash flow', hint: 'pre-expenses' },
+    ]
+  }
+  return [
+    { value: formatCurrency(s.total_equity), label: 'Net worth', hint: null },
+    { value: formatCurrency(s.portfolio_value), label: 'Portfolio value', hint: null },
+    { value: formatCurrency(s.monthly_revenue), label: 'Monthly revenue', hint: null },
+    {
+      value: formatCurrency(s.estimated_cash_flow),
+      label: 'Est. cash flow',
+      hint: 'pre-expenses',
+    },
+  ]
+})
 
 const actions = [
   {
@@ -77,8 +149,16 @@ const actions = [
   },
 ]
 
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
 onMounted(() => {
-  store.fetchProperties()
+  dashboardStore.fetchSummary()
 })
 </script>
 
@@ -114,10 +194,52 @@ onMounted(() => {
   font-weight: 600;
 }
 
+.stat-hint {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.portfolio-section {
+  margin-bottom: 2.5rem;
+}
+
 .section-title {
   margin: 0 0 1.25rem;
   font-size: 1.25rem;
   color: var(--text-primary);
+}
+
+.portfolio-table :deep(.p-datatable) {
+  font-size: 0.9rem;
+}
+
+.positive {
+  color: var(--p-green-600);
+  font-weight: 600;
+}
+
+.negative {
+  color: var(--p-red-500);
+  font-weight: 600;
+}
+
+.empty-mini {
+  margin: 0;
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.state-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
 }
 
 .actions-grid {
