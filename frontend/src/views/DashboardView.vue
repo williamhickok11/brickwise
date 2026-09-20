@@ -26,7 +26,19 @@
       </div>
 
       <section class="portfolio-section">
-        <h2 class="section-title">Portfolio breakdown</h2>
+        <div class="section-heading">
+          <h2 class="section-title">Portfolio breakdown</h2>
+          <router-link
+            v-if="!dashboardStore.summary.qbo_connected"
+            to="/settings/quickbooks"
+            class="qbo-link"
+          >
+            Connect QuickBooks for actuals
+          </router-link>
+          <span v-else-if="dashboardStore.summary.qbo_synced_at" class="sync-meta">
+            QBO synced {{ formatRelative(dashboardStore.summary.qbo_synced_at) }}
+          </span>
+        </div>
         <Card>
           <template #content>
             <DataTable
@@ -51,11 +63,18 @@
               <Column field="monthly_pi" header="P&amp;I/mo">
                 <template #body="{ data }">{{ formatCurrency(data.monthly_pi) }}</template>
               </Column>
-              <Column field="net_cash_flow" header="Net/mo">
+              <Column header="Cash flow">
                 <template #body="{ data }">
-                  <span :class="data.net_cash_flow >= 0 ? 'positive' : 'negative'">
-                    {{ formatCurrency(data.net_cash_flow) }}
-                  </span>
+                  <div class="cash-flow-cell">
+                    <span
+                      :class="displayCashFlow(data) >= 0 ? 'positive' : 'negative'"
+                    >
+                      {{ formatCurrency(displayCashFlow(data)) }}
+                    </span>
+                    <span class="source-tag">
+                      {{ data.cash_flow_source === 'quickbooks' ? 'Actual' : 'Estimate' }}
+                    </span>
+                  </div>
                 </template>
               </Column>
             </DataTable>
@@ -100,6 +119,7 @@ import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useDashboardStore } from '@/stores/dashboard'
+import type { PropertyBreakdown } from '@/types/dashboard'
 
 const dashboardStore = useDashboardStore()
 
@@ -110,17 +130,19 @@ const stats = computed(() => {
       { value: '$0', label: 'Net worth', hint: null },
       { value: '$0', label: 'Portfolio value', hint: null },
       { value: '$0', label: 'Monthly revenue', hint: null },
-      { value: '$0', label: 'Est. cash flow', hint: 'pre-expenses' },
+      { value: '$0', label: 'Cash flow', hint: 'estimate' },
     ]
   }
+
+  const hasActual = s.actual_cash_flow != null
   return [
     { value: formatCurrency(s.total_equity), label: 'Net worth', hint: null },
     { value: formatCurrency(s.portfolio_value), label: 'Portfolio value', hint: null },
     { value: formatCurrency(s.monthly_revenue), label: 'Monthly revenue', hint: null },
     {
-      value: formatCurrency(s.estimated_cash_flow),
-      label: 'Est. cash flow',
-      hint: 'pre-expenses',
+      value: formatCurrency(hasActual ? (s.actual_cash_flow as number) : s.estimated_cash_flow),
+      label: hasActual ? 'Actual cash flow' : 'Est. cash flow',
+      hint: hasActual ? 'QuickBooks · this month' : 'rent − P&I',
     },
   ]
 })
@@ -141,13 +163,20 @@ const actions = [
     disabled: false,
   },
   {
-    title: 'View reports',
-    description: 'Coming soon',
-    icon: 'pi-chart-line',
-    to: null,
-    disabled: true,
+    title: 'QuickBooks',
+    description: 'Connect books for actual cash flow',
+    icon: 'pi-wallet',
+    to: '/settings/quickbooks',
+    disabled: false,
   },
 ]
+
+function displayCashFlow(row: PropertyBreakdown): number {
+  if (row.cash_flow_source === 'quickbooks' && row.actual_cash_flow != null) {
+    return row.actual_cash_flow
+  }
+  return row.net_cash_flow
+}
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -155,6 +184,16 @@ function formatCurrency(amount: number): string {
     currency: 'USD',
     maximumFractionDigits: 0,
   }).format(amount)
+}
+
+function formatRelative(iso: string): string {
+  const then = new Date(iso).getTime()
+  const mins = Math.round((Date.now() - then) / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.round(mins / 60)
+  if (hours < 48) return `${hours}h ago`
+  return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date(iso))
 }
 
 onMounted(() => {
@@ -205,14 +244,53 @@ onMounted(() => {
   margin-bottom: 2.5rem;
 }
 
+.section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
 .section-title {
-  margin: 0 0 1.25rem;
+  margin: 0;
   font-size: 1.25rem;
   color: var(--text-primary);
 }
 
+.qbo-link {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--p-primary-500);
+  text-decoration: none;
+}
+
+.qbo-link:hover {
+  text-decoration: underline;
+}
+
+.sync-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
 .portfolio-table :deep(.p-datatable) {
   font-size: 0.9rem;
+}
+
+.cash-flow-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.source-tag {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .positive {

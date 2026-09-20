@@ -220,6 +220,8 @@ func (r *SQLQBORepository) DeleteAllMappings() error {
 }
 
 func (r *SQLQBORepository) UpsertCashFlow(cache *models.QBOCashFlowCache) error {
+	start := cache.PeriodStart.Format("2006-01-02")
+	end := cache.PeriodEnd.Format("2006-01-02")
 	if r.isSQLite {
 		_, err := r.db.Exec(`
 			INSERT INTO qbo_cash_flow_cache (property_id, period_start, period_end, net_amount, synced_at)
@@ -229,7 +231,7 @@ func (r *SQLQBORepository) UpsertCashFlow(cache *models.QBOCashFlowCache) error 
 				period_end = excluded.period_end,
 				net_amount = excluded.net_amount,
 				synced_at = excluded.synced_at`,
-			cache.PropertyID, cache.PeriodStart, cache.PeriodEnd, cache.NetAmount, cache.SyncedAt,
+			cache.PropertyID, start, end, cache.NetAmount, cache.SyncedAt,
 		)
 		return err
 	}
@@ -241,18 +243,32 @@ func (r *SQLQBORepository) UpsertCashFlow(cache *models.QBOCashFlowCache) error 
 			period_end = EXCLUDED.period_end,
 			net_amount = EXCLUDED.net_amount,
 			synced_at = EXCLUDED.synced_at`,
-		cache.PropertyID, cache.PeriodStart, cache.PeriodEnd, cache.NetAmount, cache.SyncedAt,
+		cache.PropertyID, start, end, cache.NetAmount, cache.SyncedAt,
 	)
 	return err
 }
 
 func (r *SQLQBORepository) ListCashFlowForPeriod(periodStart, periodEnd time.Time) ([]models.QBOCashFlowCache, error) {
-	rows, err := r.db.Query(`
-		SELECT property_id, period_start, period_end, net_amount, synced_at
-		FROM qbo_cash_flow_cache
-		WHERE period_start = $1 AND period_end = $2`,
-		periodStart, periodEnd,
-	)
+	start := periodStart.Format("2006-01-02")
+	end := periodEnd.Format("2006-01-02")
+
+	var rows *sql.Rows
+	var err error
+	if r.isSQLite {
+		rows, err = r.db.Query(`
+			SELECT property_id, period_start, period_end, net_amount, synced_at
+			FROM qbo_cash_flow_cache
+			WHERE date(period_start) = date($1) AND date(period_end) = date($2)`,
+			start, end,
+		)
+	} else {
+		rows, err = r.db.Query(`
+			SELECT property_id, period_start, period_end, net_amount, synced_at
+			FROM qbo_cash_flow_cache
+			WHERE period_start = $1::date AND period_end = $2::date`,
+			start, end,
+		)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("list cash flow cache: %w", err)
 	}

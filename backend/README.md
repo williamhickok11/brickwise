@@ -143,21 +143,15 @@ Run with coverage:
 go test -cover ./...
 ```
 
-## Environment Variables
-
-- `PORT` - Server port (default: 8080)
-- `DATABASE_URL` - Postgres connection string (if set, uses Postgres; otherwise SQLite)
-- `DB_PATH` - SQLite database path (default: ./brickwise.db)
-- `LOG_FORMAT` - Log format: "json" or text (default: text)
-
 ## Production Considerations
 
 1. **Database**: Use Postgres in production (set `DATABASE_URL`)
 2. **CORS**: Configure allowed origins (currently `*` for dev)
 3. **Logging**: Set `LOG_FORMAT=json` for structured logs
 4. **Connection Pooling**: Already configured (max 25 connections)
-5. **Timeouts**: Already configured (15s read/write, 60s idle)
+5. **Timeouts**: Already configured (15s read, 60s write, 60s idle)
 6. **Graceful Shutdown**: Implemented with 5s timeout
+7. **QuickBooks tokens**: Stored in DB; protect the API before production use
 
 ## Future Enhancements
 
