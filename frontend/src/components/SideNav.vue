@@ -25,6 +25,7 @@ const navItems = [
   { to: '/properties', label: 'Properties', icon: 'pi-building' },
   { to: '/residences', label: 'Residences', icon: 'pi-home' },
   { to: '/reps', label: 'REPS', icon: 'pi-clock' },
+  { to: '/settings/quickbooks', label: 'QuickBooks', icon: 'pi-wallet' },
 ] as const
 </script>
 
