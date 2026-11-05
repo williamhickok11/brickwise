@@ -69,7 +69,6 @@
               <Button
                 label="Disconnect"
                 icon="pi pi-times"
-                severity="secondary"
                 outlined
                 size="large"
                 @click="handleDisconnect"

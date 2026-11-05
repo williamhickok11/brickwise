@@ -36,6 +36,79 @@ button {
   font-family: inherit;
 }
 
+/* All PrimeVue buttons use the blue primary palette */
+.p-button.p-button-secondary,
+.p-button.p-button-success,
+.p-button.p-button-info,
+.p-button.p-button-warn,
+.p-button.p-button-help,
+.p-button.p-button-danger,
+.p-button.p-button-contrast {
+  background: var(--p-primary-color, #1a6fb5);
+  border-color: var(--p-primary-color, #1a6fb5);
+  color: var(--p-primary-contrast-color, #ffffff);
+}
+
+.p-button.p-button-secondary:not(:disabled):hover,
+.p-button.p-button-success:not(:disabled):hover,
+.p-button.p-button-info:not(:disabled):hover,
+.p-button.p-button-warn:not(:disabled):hover,
+.p-button.p-button-help:not(:disabled):hover,
+.p-button.p-button-danger:not(:disabled):hover,
+.p-button.p-button-contrast:not(:disabled):hover {
+  background: var(--p-primary-hover-color, #155d9a);
+  border-color: var(--p-primary-hover-color, #155d9a);
+  color: var(--p-primary-contrast-color, #ffffff);
+}
+
+.p-button.p-button-outlined.p-button-secondary,
+.p-button.p-button-outlined.p-button-success,
+.p-button.p-button-outlined.p-button-info,
+.p-button.p-button-outlined.p-button-warn,
+.p-button.p-button-outlined.p-button-help,
+.p-button.p-button-outlined.p-button-danger,
+.p-button.p-button-outlined.p-button-contrast {
+  background: transparent;
+  border-color: var(--p-primary-color, #1a6fb5);
+  color: var(--p-primary-color, #1a6fb5);
+}
+
+.p-button.p-button-outlined.p-button-secondary:not(:disabled):hover,
+.p-button.p-button-outlined.p-button-success:not(:disabled):hover,
+.p-button.p-button-outlined.p-button-info:not(:disabled):hover,
+.p-button.p-button-outlined.p-button-warn:not(:disabled):hover,
+.p-button.p-button-outlined.p-button-help:not(:disabled):hover,
+.p-button.p-button-outlined.p-button-danger:not(:disabled):hover,
+.p-button.p-button-outlined.p-button-contrast:not(:disabled):hover {
+  background: color-mix(in srgb, var(--p-primary-color, #1a6fb5) 8%, transparent);
+  border-color: var(--p-primary-color, #1a6fb5);
+  color: var(--p-primary-color, #1a6fb5);
+}
+
+.p-button.p-button-text.p-button-secondary,
+.p-button.p-button-text.p-button-success,
+.p-button.p-button-text.p-button-info,
+.p-button.p-button-text.p-button-warn,
+.p-button.p-button-text.p-button-help,
+.p-button.p-button-text.p-button-danger,
+.p-button.p-button-text.p-button-contrast {
+  background: transparent;
+  border-color: transparent;
+  color: var(--p-primary-color, #1a6fb5);
+}
+
+.p-button.p-button-text.p-button-secondary:not(:disabled):hover,
+.p-button.p-button-text.p-button-success:not(:disabled):hover,
+.p-button.p-button-text.p-button-info:not(:disabled):hover,
+.p-button.p-button-text.p-button-warn:not(:disabled):hover,
+.p-button.p-button-text.p-button-help:not(:disabled):hover,
+.p-button.p-button-text.p-button-danger:not(:disabled):hover,
+.p-button.p-button-text.p-button-contrast:not(:disabled):hover {
+  background: color-mix(in srgb, var(--p-primary-color, #1a6fb5) 8%, transparent);
+  border-color: transparent;
+  color: var(--p-primary-color, #1a6fb5);
+}
+
 input,
 textarea,
 select {

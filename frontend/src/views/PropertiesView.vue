@@ -16,7 +16,6 @@
         v-else
         label="Cancel"
         icon="pi pi-times"
-        severity="secondary"
         size="large"
         outlined
         @click="closeForm"
@@ -109,14 +108,12 @@
             <div class="property-actions">
               <Button
                 icon="pi pi-dollar"
-                severity="secondary"
                 outlined
                 aria-label="Edit financials"
                 @click="openFinancials(property)"
               />
               <Button
                 icon="pi pi-trash"
-                severity="danger"
                 outlined
                 aria-label="Delete property"
                 :loading="store.loading"
@@ -258,7 +255,6 @@
             type="button"
             label="Remove mortgage"
             icon="pi pi-trash"
-            severity="danger"
             outlined
             :loading="savingFinancials"
             @click="removeMortgage"
@@ -494,7 +490,6 @@ function confirmDelete(id: number) {
     icon: 'pi pi-exclamation-triangle',
     rejectLabel: 'Cancel',
     acceptLabel: 'Delete',
-    acceptClass: 'p-button-danger',
     accept: async () => {
       await store.deleteProperty(id)
       toast.add({ severity: 'success', summary: 'Property deleted', life: 3000 })

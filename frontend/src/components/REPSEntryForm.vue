@@ -18,7 +18,6 @@
         <Button
           type="button"
           label="Yesterday"
-          severity="secondary"
           outlined
           size="large"
           @click="setYesterday"
@@ -47,7 +46,6 @@
             :key="category"
             type="button"
             :label="category"
-            :severity="form.category === category ? undefined : 'secondary'"
             :outlined="form.category !== category"
             size="large"
             class="category-btn"
@@ -88,7 +86,6 @@
           type="button"
           :icon="isRecording ? 'pi pi-stop-circle' : 'pi pi-microphone'"
           :label="isRecording ? 'Stop' : 'Voice'"
-          :severity="isRecording ? 'danger' : 'secondary'"
           class="voice-btn"
           size="large"
           @click="toggleVoiceInput"
@@ -144,7 +141,6 @@
       <Button
         type="button"
         label="Cancel"
-        severity="secondary"
         outlined
         size="large"
         class="action-btn"

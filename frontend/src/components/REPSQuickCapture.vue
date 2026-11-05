@@ -23,7 +23,6 @@
             type="button"
             :icon="isRecording ? 'pi pi-stop-circle' : 'pi pi-microphone'"
             :label="isRecording ? 'Stop' : 'Voice'"
-            :severity="isRecording ? 'danger' : 'secondary'"
             class="voice-btn"
             size="large"
             @click="toggleVoiceInput"
@@ -109,7 +108,6 @@
             <Button
               label="Copy summary"
               icon="pi pi-copy"
-              severity="secondary"
               outlined
               size="large"
               :disabled="!canCopy"
@@ -122,7 +120,6 @@
             <Button
               label="Copy CSV row"
               icon="pi pi-copy"
-              severity="secondary"
               outlined
               size="large"
               :disabled="!canCopy"
@@ -145,7 +142,6 @@
           <Button
             label="Clear"
             icon="pi pi-times"
-            severity="secondary"
             outlined
             size="large"
             class="action-btn"

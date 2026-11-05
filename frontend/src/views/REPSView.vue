@@ -9,7 +9,6 @@
         <Button
           label="Export"
           icon="pi pi-download"
-          severity="secondary"
           outlined
           size="large"
           @click="showExportModal = true"
@@ -121,7 +120,6 @@
               <template #body="{ data }">
                 <Button
                   icon="pi pi-trash"
-                  severity="danger"
                   text
                   rounded
                   aria-label="Delete entry"
@@ -168,7 +166,6 @@
         <Button label="Export CSV" icon="pi pi-download" size="large" @click="handleExport" />
         <Button
           label="Cancel"
-          severity="secondary"
           outlined
           size="large"
           @click="showExportModal = false"
@@ -383,7 +380,6 @@ function confirmDelete(id: number) {
     icon: 'pi pi-exclamation-triangle',
     rejectLabel: 'Cancel',
     acceptLabel: 'Delete',
-    acceptClass: 'p-button-danger',
     accept: () => {
       store.deleteEntry(id).then(() => {
         applyFilters()

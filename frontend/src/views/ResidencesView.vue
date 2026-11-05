@@ -27,7 +27,6 @@
             v-for="property in properties"
             :key="property.id"
             :label="property.name"
-            :severity="selectedPropertyId === property.id ? undefined : 'secondary'"
             :outlined="selectedPropertyId !== property.id"
             size="large"
             class="property-chip"
@@ -56,7 +55,6 @@
           v-else
           label="Cancel"
           icon="pi pi-times"
-          severity="secondary"
           outlined
           size="large"
           @click="cancelAdd"
@@ -143,7 +141,6 @@
               </div>
               <Button
                 label="Move out"
-                severity="secondary"
                 outlined
                 size="large"
                 @click="startMoveOut(r)"
@@ -169,7 +166,6 @@
                 />
                 <Button
                   label="Cancel"
-                  severity="secondary"
                   outlined
                   size="large"
                   @click="cancelMoveOut"
@@ -188,7 +184,6 @@
           <Button
             :label="showFormer ? 'Hide former residents' : 'Show former residents'"
             :icon="showFormer ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
-            severity="secondary"
             text
             size="large"
             class="mb-3"
