@@ -283,7 +283,7 @@ import Tag from 'primevue/tag'
 import ProgressSpinner from 'primevue/progressspinner'
 import { propertyApi, mortgageApi } from '@/api/client'
 import { usePropertyStore } from '@/stores/property'
-import type { CreatePropertyRequest, Property } from '@/types/property'
+import { PROPERTY_TYPES, type CreatePropertyRequest, type Property } from '@/types/property'
 import type { UpsertMortgageRequest } from '@/types/mortgage'
 
 const route = useRoute()
@@ -292,11 +292,7 @@ const store = usePropertyStore()
 const confirm = useConfirm()
 const toast = useToast()
 
-const propertyTypes = [
-  { label: 'Residential', value: 'residential' },
-  { label: 'Commercial', value: 'commercial' },
-  { label: 'Mixed use', value: 'mixed' },
-]
+const propertyTypes = PROPERTY_TYPES
 
 const form = ref<CreatePropertyRequest>({
   name: '',
