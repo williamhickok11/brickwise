@@ -6,7 +6,7 @@
         <p class="page-subtitle">Manage your rental portfolio</p>
       </div>
       <Button
-        v-if="!showAddForm"
+        v-if="!showPropertyForm"
         label="Add Property"
         icon="pi pi-plus"
         size="large"
@@ -26,8 +26,8 @@
       {{ store.error }}
     </Message>
 
-    <Card v-if="showAddForm" class="mb-4">
-      <template #title>New property</template>
+    <Card v-if="showPropertyForm" class="mb-4">
+      <template #title>{{ editingId ? 'Edit property' : 'New property' }}</template>
       <template #content>
         <form class="property-form" @submit.prevent="handleSubmit">
           <div class="form-stack">
@@ -66,7 +66,7 @@
           </div>
           <Button
             type="submit"
-            label="Create property"
+            :label="editingId ? 'Save changes' : 'Create property'"
             icon="pi pi-check"
             size="large"
             class="mt-3 w-full"
@@ -106,6 +106,12 @@
               </p>
             </div>
             <div class="property-actions">
+              <Button
+                icon="pi pi-pencil"
+                outlined
+                aria-label="Edit property"
+                @click="openEdit(property)"
+              />
               <Button
                 icon="pi pi-dollar"
                 outlined
@@ -294,15 +300,19 @@ const toast = useToast()
 
 const propertyTypes = PROPERTY_TYPES
 
-const form = ref<CreatePropertyRequest>({
+const emptyForm = (): CreatePropertyRequest => ({
   name: '',
   address: '',
   property_type: '',
   default_mileage: 0,
 })
 
+const form = ref<CreatePropertyRequest>(emptyForm())
+const editingId = ref<number | null>(null)
+
 const properties = computed(() => store.properties ?? [])
 const showAddForm = computed(() => route.query.add === '1')
+const showPropertyForm = computed(() => showAddForm.value || editingId.value !== null)
 
 const financialsVisible = ref(false)
 const financialsProperty = ref<Property | null>(null)
@@ -458,11 +468,32 @@ onMounted(() => {
   store.fetchProperties()
 })
 
+function resetForm() {
+  form.value = emptyForm()
+  editingId.value = null
+}
+
 function openForm() {
+  editingId.value = null
+  form.value = emptyForm()
   router.push({ path: '/properties', query: { ...route.query, add: '1' } })
 }
 
+function openEdit(property: Property) {
+  const q = { ...route.query }
+  delete q.add
+  router.replace({ path: '/properties', query: q })
+  editingId.value = property.id
+  form.value = {
+    name: property.name,
+    address: property.address,
+    property_type: (property.property_type as CreatePropertyRequest['property_type']) || '',
+    default_mileage: property.default_mileage ?? 0,
+  }
+}
+
 function closeForm() {
+  resetForm()
   const q = { ...route.query }
   delete q.add
   router.replace({ path: '/properties', query: q })
@@ -470,8 +501,13 @@ function closeForm() {
 
 async function handleSubmit() {
   try {
+    if (editingId.value !== null) {
+      await store.updateProperty(editingId.value, form.value)
+      closeForm()
+      toast.add({ severity: 'success', summary: 'Property updated', life: 3000 })
+      return
+    }
     await store.createProperty(form.value)
-    form.value = { name: '', address: '', property_type: '', default_mileage: 0 }
     closeForm()
     toast.add({ severity: 'success', summary: 'Property created', life: 3000 })
   } catch {
