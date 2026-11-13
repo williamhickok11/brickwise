@@ -60,12 +60,15 @@ func ValidateProperty(name, address, propertyType string) error {
 		})
 	}
 
+	// Keep in sync with frontend PROPERTY_TYPES (frontend/src/types/property.ts).
 	validTypes := map[string]bool{
 		"residential": true,
 		"commercial":  true,
 		"industrial":  true,
 		"land":        true,
+		"mixed":       true,
 	}
+	validTypeList := []string{"residential", "commercial", "industrial", "land", "mixed"}
 
 	if strings.TrimSpace(propertyType) == "" {
 		errs.Errors = append(errs.Errors, ValidationError{
@@ -75,7 +78,7 @@ func ValidateProperty(name, address, propertyType string) error {
 	} else if !validTypes[strings.ToLower(propertyType)] {
 		errs.Errors = append(errs.Errors, ValidationError{
 			Field:   "property_type",
-			Message: fmt.Sprintf("property_type must be one of: %s", strings.Join([]string{"residential", "commercial", "industrial", "land"}, ", ")),
+			Message: fmt.Sprintf("property_type must be one of: %s", strings.Join(validTypeList, ", ")),
 		})
 	}
 
