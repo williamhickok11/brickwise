@@ -15,6 +15,7 @@ import type {
   TimeEntryFilter,
 } from '@/types/time_entry'
 import type { PropertyQBOMappingInput, QBOClass, QBOStatus, QBOSyncResult } from '@/types/qbo'
+import type { DocumentMeta } from '@/types/document'
 
 const client = axios.create({
   baseURL: '/api/v1',
@@ -184,5 +185,27 @@ export const residenceApi = {
 
   update: (id: number, data: UpdateResidenceRequest): Promise<Residence> => {
     return client.put(`/residences/${id}`, data).then((res) => res.data)
+  },
+}
+
+export const documentApi = {
+  get: (residenceId: number): Promise<DocumentMeta> => {
+    return client.get(`/residences/${residenceId}/document`).then((res) => res.data)
+  },
+
+  upload: (residenceId: number, file: File): Promise<DocumentMeta> => {
+    const form = new FormData()
+    form.append('file', file)
+    return client
+      .post(`/residences/${residenceId}/document`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((res) => res.data)
+  },
+
+  download: (residenceId: number): Promise<Blob> => {
+    return client
+      .get(`/residences/${residenceId}/document/download`, { responseType: 'blob' })
+      .then((res) => res.data)
   },
 }

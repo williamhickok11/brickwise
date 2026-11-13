@@ -255,6 +255,37 @@ func createTables(db *sql.DB) error {
 		return err
 	}
 
+	if err := createDocumentsTable(db, dbURL != ""); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createDocumentsTable(db *sql.DB, isPostgres bool) error {
+	var stmt string
+	if isPostgres {
+		stmt = `CREATE TABLE IF NOT EXISTS documents (
+			id SERIAL PRIMARY KEY,
+			residence_id INTEGER NOT NULL UNIQUE REFERENCES residences(id) ON DELETE CASCADE,
+			file_name VARCHAR(255) NOT NULL,
+			content_type VARCHAR(100) NOT NULL,
+			size BIGINT NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)`
+	} else {
+		stmt = `CREATE TABLE IF NOT EXISTS documents (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			residence_id INTEGER NOT NULL UNIQUE REFERENCES residences(id) ON DELETE CASCADE,
+			file_name TEXT NOT NULL,
+			content_type TEXT NOT NULL,
+			size INTEGER NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`
+	}
+	if _, err := db.Exec(stmt); err != nil {
+		return fmt.Errorf("failed to create documents table: %w", err)
+	}
 	return nil
 }
 

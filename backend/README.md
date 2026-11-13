@@ -69,6 +69,7 @@ DATABASE_URL="postgres://user:pass@localhost/dbname?sslmode=disable" go run cmd/
 | `QBO_REDIRECT_URI` | OAuth redirect URI registered in Intuit | `http://localhost:8080/api/v1/integrations/qbo/callback` |
 | `QBO_FRONTEND_REDIRECT` | Where to send the browser after OAuth | `http://localhost:5173/settings/quickbooks` |
 | `QBO_ENVIRONMENT` | `sandbox` or `production` | `sandbox` |
+| `DOCUMENTS_DIR` | Local directory for lease PDFs | `./data/documents` |
 
 ### QuickBooks Online
 

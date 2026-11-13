@@ -41,6 +41,8 @@ func main() {
 	timeEntryService := service.NewTimeEntryService(timeEntryRepo, propertyRepo)
 	residenceRepo := repository.NewResidenceRepository(database)
 	residenceService := service.NewResidenceService(residenceRepo, propertyRepo)
+	documentRepo := repository.NewDocumentRepository(database)
+	documentService := service.NewDocumentService(documentRepo, residenceRepo)
 	mortgageRepo := repository.NewMortgageRepository(database)
 	mortgageService := service.NewMortgageService(mortgageRepo, propertyRepo)
 
@@ -85,7 +87,7 @@ func main() {
 
 	// API routes
 	r.Route("/api/v1", func(r chi.Router) {
-		handlers.RegisterRoutes(r, propertyService, timeEntryService, residenceService, mortgageService, dashboardService, qboService)
+		handlers.RegisterRoutes(r, propertyService, timeEntryService, residenceService, mortgageService, dashboardService, qboService, documentService)
 	})
 
 	// Start server
