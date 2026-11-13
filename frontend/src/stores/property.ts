@@ -57,6 +57,22 @@ export const usePropertyStore = defineStore('property', () => {
     }
   }
 
+  async function updateProperty(id: number, data: CreatePropertyRequest) {
+    loading.value = true
+    error.value = null
+    try {
+      const property = await propertyApi.update(id, data)
+      const idx = properties.value.findIndex((p) => p.id === id)
+      if (idx >= 0) properties.value[idx] = property
+      return property
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to update property'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function deleteProperty(id: number) {
     loading.value = true
     error.value = null
@@ -79,6 +95,7 @@ export const usePropertyStore = defineStore('property', () => {
     setShowAddForm,
     fetchProperties,
     createProperty,
+    updateProperty,
     deleteProperty,
   }
 })
