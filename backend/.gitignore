@@ -3,6 +3,9 @@
 *.db-shm
 *.db-wal
 
+# Local lease PDF storage
+data/documents/
+
 # Binaries
 brickwise
 brickwise.exe

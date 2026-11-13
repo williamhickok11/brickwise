@@ -15,6 +15,7 @@ func RegisterRoutes(
 	mortgageService *service.MortgageService,
 	dashboardService *service.DashboardService,
 	qboService *service.QBOService,
+	documentService *service.DocumentService,
 ) {
 	propertyHandler := NewPropertyHandler(propertyService)
 	timeEntryHandler := NewTimeEntryHandler(timeEntryService)
@@ -22,6 +23,7 @@ func RegisterRoutes(
 	mortgageHandler := NewMortgageHandler(mortgageService)
 	dashboardHandler := NewDashboardHandler(dashboardService)
 	qboHandler := NewQBOHandler(qboService)
+	documentHandler := NewDocumentHandler(documentService)
 
 	r.Get("/dashboard/summary", dashboardHandler.GetSummary)
 
@@ -61,5 +63,8 @@ func RegisterRoutes(
 		r.Post("/", residenceHandler.CreateResidence)
 		r.Get("/{id}", residenceHandler.GetResidence)
 		r.Put("/{id}", residenceHandler.UpdateResidence)
+		r.Get("/{id}/document", documentHandler.GetDocument)
+		r.Post("/{id}/document", documentHandler.UploadDocument)
+		r.Get("/{id}/document/download", documentHandler.DownloadDocument)
 	})
 }

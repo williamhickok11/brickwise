@@ -140,6 +140,30 @@
                 </div>
               </div>
               <div class="resident-actions">
+                <input
+                  :ref="(el) => setFileInputRef(r.id, el)"
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  class="file-input"
+                  @change="(e) => onLeaseFileSelected(r.id, e)"
+                />
+                <Button
+                  v-if="documentsByResidence[r.id]"
+                  icon="pi pi-download"
+                  outlined
+                  size="large"
+                  aria-label="Download lease PDF"
+                  :loading="docBusyId === r.id"
+                  @click="downloadLease(r.id)"
+                />
+                <Button
+                  :label="documentsByResidence[r.id] ? 'Replace PDF' : 'Upload lease PDF'"
+                  icon="pi pi-file-pdf"
+                  outlined
+                  size="large"
+                  :loading="docBusyId === r.id"
+                  @click="triggerLeaseUpload(r.id)"
+                />
                 <Button
                   icon="pi pi-pencil"
                   outlined
@@ -216,6 +240,30 @@
                   </div>
                 </div>
                 <div class="resident-actions">
+                  <input
+                    :ref="(el) => setFileInputRef(r.id, el)"
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    class="file-input"
+                    @change="(e) => onLeaseFileSelected(r.id, e)"
+                  />
+                  <Button
+                    v-if="documentsByResidence[r.id]"
+                    icon="pi pi-download"
+                    outlined
+                    size="large"
+                    aria-label="Download lease PDF"
+                    :loading="docBusyId === r.id"
+                    @click="downloadLease(r.id)"
+                  />
+                  <Button
+                    :label="documentsByResidence[r.id] ? 'Replace PDF' : 'Upload lease PDF'"
+                    icon="pi pi-file-pdf"
+                    outlined
+                    size="large"
+                    :loading="docBusyId === r.id"
+                    @click="triggerLeaseUpload(r.id)"
+                  />
                   <Button
                     icon="pi pi-pencil"
                     outlined
@@ -245,8 +293,10 @@ import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
+import { documentApi } from '@/api/client'
 import { usePropertyStore } from '@/stores/property'
 import { useResidenceStore } from '@/stores/residence'
+import type { DocumentMeta } from '@/types/document'
 import type {
   CreateResidenceRequest,
   Residence,
@@ -264,6 +314,9 @@ const showAddForm = ref(false)
 const editingId = ref<number | null>(null)
 const showFormer = ref(false)
 const showResidentForm = computed(() => showAddForm.value || editingId.value !== null)
+const documentsByResidence = ref<Record<number, DocumentMeta>>({})
+const docBusyId = ref<number | null>(null)
+const fileInputs = ref<Record<number, HTMLInputElement | null>>({})
 
 const form = ref<CreateResidenceRequest>({
   property_id: 0,
@@ -337,10 +390,99 @@ watch(
     if (id === null) return
     cancelForm()
     showFormer.value = false
+    documentsByResidence.value = {}
     await residenceStore.fetchCurrentResidents(id)
     await residenceStore.fetchFormerResidents(id)
+    await loadDocumentsForLoadedResidents()
   },
 )
+
+function setFileInputRef(residenceId: number, el: unknown) {
+  fileInputs.value[residenceId] = (el as HTMLInputElement | null) ?? null
+}
+
+async function loadDocumentsForLoadedResidents() {
+  const residents = [
+    ...residenceStore.currentResidents,
+    ...residenceStore.formerResidents,
+  ]
+  const next: Record<number, DocumentMeta> = {}
+  await Promise.all(
+    residents.map(async (r) => {
+      try {
+        next[r.id] = await documentApi.get(r.id)
+      } catch {
+        // No document attached
+      }
+    }),
+  )
+  documentsByResidence.value = next
+}
+
+function triggerLeaseUpload(residenceId: number) {
+  fileInputs.value[residenceId]?.click()
+}
+
+async function onLeaseFileSelected(residenceId: number, event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  if (file.type && file.type !== 'application/pdf') {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF only',
+      detail: 'Lease documents must be PDF files.',
+      life: 4000,
+    })
+    return
+  }
+
+  docBusyId.value = residenceId
+  try {
+    const meta = await documentApi.upload(residenceId, file)
+    documentsByResidence.value = {
+      ...documentsByResidence.value,
+      [residenceId]: meta,
+    }
+    toast.add({ severity: 'success', summary: 'Lease PDF saved', life: 3000 })
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'Upload failed',
+      detail: err instanceof Error ? err.message : undefined,
+      life: 5000,
+    })
+  } finally {
+    docBusyId.value = null
+  }
+}
+
+async function downloadLease(residenceId: number) {
+  docBusyId.value = residenceId
+  try {
+    const blob = await documentApi.download(residenceId)
+    const meta = documentsByResidence.value[residenceId]
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = meta?.file_name || `lease-${residenceId}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'Download failed',
+      detail: err instanceof Error ? err.message : undefined,
+      life: 5000,
+    })
+  } finally {
+    docBusyId.value = null
+  }
+}
 
 function selectProperty(propertyId: number) {
   selectedPropertyId.value = propertyId
@@ -547,6 +689,11 @@ async function confirmMoveOut() {
   flex-wrap: wrap;
   gap: 0.5rem;
   flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+.file-input {
+  display: none;
 }
 
 .resident-row.former {
