@@ -45,11 +45,11 @@
           </p>
         </div>
         <Button
-          v-if="!showAddForm"
+          v-if="!showResidentForm"
           label="Add resident"
           icon="pi pi-user-plus"
           size="large"
-          @click="showAddForm = true"
+          @click="openAdd"
         />
         <Button
           v-else
@@ -57,7 +57,7 @@
           icon="pi pi-times"
           outlined
           size="large"
-          @click="cancelAdd"
+          @click="cancelForm"
         />
       </div>
 
@@ -65,10 +65,10 @@
         {{ residenceStore.error }}
       </Message>
 
-      <Card v-if="showAddForm" class="mb-3">
-        <template #title>New resident</template>
+      <Card v-if="showResidentForm" class="mb-3">
+        <template #title>{{ editingId ? 'Edit resident' : 'New resident' }}</template>
         <template #content>
-          <form class="form-grid" @submit.prevent="handleAddResident">
+          <form class="form-grid" @submit.prevent="handleSubmit">
             <FloatLabel>
               <InputText id="r-name" v-model="form.name" required fluid />
               <label for="r-name">Name</label>
@@ -107,7 +107,7 @@
             </div>
             <Button
               type="submit"
-              label="Add resident"
+              :label="editingId ? 'Save changes' : 'Add resident'"
               icon="pi pi-check"
               size="large"
               class="submit-btn"
@@ -139,12 +139,21 @@
                   <span v-else-if="r.email"> · {{ r.email }}</span>
                 </div>
               </div>
-              <Button
-                label="Move out"
-                outlined
-                size="large"
-                @click="startMoveOut(r)"
-              />
+              <div class="resident-actions">
+                <Button
+                  icon="pi pi-pencil"
+                  outlined
+                  size="large"
+                  aria-label="Edit resident"
+                  @click="openEdit(r)"
+                />
+                <Button
+                  label="Move out"
+                  outlined
+                  size="large"
+                  @click="startMoveOut(r)"
+                />
+              </div>
             </div>
           </div>
 
@@ -206,6 +215,15 @@
                     <span v-if="r.phone"> · {{ r.phone }}</span>
                   </div>
                 </div>
+                <div class="resident-actions">
+                  <Button
+                    icon="pi pi-pencil"
+                    outlined
+                    size="large"
+                    aria-label="Edit resident"
+                    @click="openEdit(r)"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -229,7 +247,11 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { usePropertyStore } from '@/stores/property'
 import { useResidenceStore } from '@/stores/residence'
-import type { CreateResidenceRequest, UpdateResidenceRequest } from '@/types/residence'
+import type {
+  CreateResidenceRequest,
+  Residence,
+  UpdateResidenceRequest,
+} from '@/types/residence'
 
 const propertyStore = usePropertyStore()
 const residenceStore = useResidenceStore()
@@ -239,7 +261,9 @@ const properties = computed(() => propertyStore.properties ?? [])
 
 const selectedPropertyId = ref<number | null>(null)
 const showAddForm = ref(false)
+const editingId = ref<number | null>(null)
 const showFormer = ref(false)
+const showResidentForm = computed(() => showAddForm.value || editingId.value !== null)
 
 const form = ref<CreateResidenceRequest>({
   property_id: 0,
@@ -311,7 +335,7 @@ watch(
   () => selectedPropertyId.value,
   async (id) => {
     if (id === null) return
-    showAddForm.value = false
+    cancelForm()
     showFormer.value = false
     await residenceStore.fetchCurrentResidents(id)
     await residenceStore.fetchFormerResidents(id)
@@ -323,6 +347,7 @@ function selectProperty(propertyId: number) {
 }
 
 function resetForm() {
+  editingId.value = null
   form.value = {
     property_id: selectedPropertyId.value ?? 0,
     name: '',
@@ -335,12 +360,34 @@ function resetForm() {
   }
 }
 
-function cancelAdd() {
+function openAdd() {
+  editingId.value = null
+  resetForm()
+  showAddForm.value = true
+}
+
+function openEdit(r: Residence) {
+  cancelMoveOut()
+  showAddForm.value = false
+  editingId.value = r.id
+  form.value = {
+    property_id: r.property_id,
+    name: r.name,
+    phone: r.phone ?? '',
+    email: r.email ?? '',
+    start_date: r.start_date,
+    end_date: r.end_date ?? undefined,
+    is_active: r.is_active,
+    monthly_rent: r.monthly_rent ?? 0,
+  }
+}
+
+function cancelForm() {
   showAddForm.value = false
   resetForm()
 }
 
-async function handleAddResident() {
+async function handleSubmit() {
   if (selectedPropertyId.value === null) return
 
   const data: CreateResidenceRequest = {
@@ -354,12 +401,25 @@ async function handleAddResident() {
     monthly_rent: form.value.monthly_rent ?? 0,
   }
 
-  await residenceStore.createResident(data)
-  await residenceStore.fetchCurrentResidents(selectedPropertyId.value)
-  await residenceStore.fetchFormerResidents(selectedPropertyId.value)
-  showAddForm.value = false
-  resetForm()
-  toast.add({ severity: 'success', summary: 'Resident added', life: 3000 })
+  try {
+    if (editingId.value !== null) {
+      const update: UpdateResidenceRequest = { ...data }
+      await residenceStore.updateResident(editingId.value, update)
+      await residenceStore.fetchCurrentResidents(selectedPropertyId.value)
+      await residenceStore.fetchFormerResidents(selectedPropertyId.value)
+      cancelForm()
+      toast.add({ severity: 'success', summary: 'Resident updated', life: 3000 })
+      return
+    }
+
+    await residenceStore.createResident(data)
+    await residenceStore.fetchCurrentResidents(selectedPropertyId.value)
+    await residenceStore.fetchFormerResidents(selectedPropertyId.value)
+    cancelForm()
+    toast.add({ severity: 'success', summary: 'Resident added', life: 3000 })
+  } catch {
+    // Error handled by store
+  }
 }
 
 const moveOutTargetId = ref<number | null>(null)
@@ -480,6 +540,13 @@ async function confirmMoveOut() {
   border-radius: var(--p-border-radius-md);
   background: var(--p-surface-50);
   border: 1px solid var(--p-surface-200);
+}
+
+.resident-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .resident-row.former {
