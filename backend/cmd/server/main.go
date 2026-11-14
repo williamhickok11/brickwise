@@ -19,9 +19,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load .env if present (cwd or backend/). Does not override vars already set.
+	_ = godotenv.Load(".env", "backend/.env")
+
 	// Initialize logger
 	log := logger.Default()
 	log.Info("Starting Brickwise API server")
