@@ -46,22 +46,47 @@ The API follows a clean layered architecture:
 go mod tidy
 ```
 
-2. Run with SQLite (default):
+2. Run with SQLite (default — no env vars required):
 ```bash
 go run cmd/server/main.go
 ```
 
-3. Run with Postgres:
+3. Run with Postgres / Supabase:
 ```bash
-DATABASE_URL="postgres://user:pass@localhost/dbname?sslmode=disable" go run cmd/server/main.go
+export DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/postgres"
+go run cmd/server/main.go
 ```
+
+On startup the server creates/updates tables automatically (see `internal/db`).  
+Never commit real connection strings; use env vars or a local `.env` that stays gitignored. See `.env.example`.
+
+### Supabase (recommended hosted Postgres)
+
+1. Create a project at [supabase.com](https://supabase.com) (or open an existing one).
+2. In the dashboard go to **Project Settings → Database**.
+3. Under **Connection string**, choose **URI**.
+4. Copy the URI and replace the password placeholder with your database password.
+   - Prefer the **direct** connection (host like `db.<project-ref>.supabase.co`, port `5432`).
+   - Session-mode pooler also works; transaction-mode pooler can break some `database/sql` usage.
+5. Export it (do not paste secrets into source files):
+```bash
+export DATABASE_URL='postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres'
+```
+6. Start the backend from `backend/`:
+```bash
+go run cmd/server/main.go
+```
+You should see a log line like `Using Postgres database (DATABASE_URL)`. Tables are created on first connect.  
+If `sslmode` is omitted for a `*.supabase.co` host, the backend adds `sslmode=require` automatically.
+
+To go back to local SQLite, unset `DATABASE_URL` and restart.
 
 ## Environment Variables
 
 | Variable | Description | Default |
 |---|---|---|
 | `PORT` | HTTP listen port | `8080` |
-| `DATABASE_URL` | Postgres connection string (omit for SQLite) | _(empty → SQLite)_ |
+| `DATABASE_URL` | Postgres/Supabase connection URI (omit for SQLite) | _(empty → SQLite)_ |
 | `DB_PATH` | SQLite file path | `./brickwise.db` |
 | `LOG_FORMAT` | `json` or text | text |
 | `QBO_CLIENT_ID` | Intuit app client ID | _(required for QBO)_ |
@@ -70,6 +95,7 @@ DATABASE_URL="postgres://user:pass@localhost/dbname?sslmode=disable" go run cmd/
 | `QBO_FRONTEND_REDIRECT` | Where to send the browser after OAuth | `http://localhost:5173/settings/quickbooks` |
 | `QBO_ENVIRONMENT` | `sandbox` or `production` | `sandbox` |
 | `DOCUMENTS_DIR` | Local directory for lease PDFs | `./data/documents` |
+| `PROPERTY_IMAGES_DIR` | Local directory for property photos | `./data/property-images` |
 
 ### QuickBooks Online
 

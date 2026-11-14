@@ -25,7 +25,11 @@ cd backend
 go mod download
 go run cmd/server/main.go
 ```
-Server runs on `http://localhost:8080`
+Server runs on `http://localhost:8080` with **SQLite** by default (`backend/brickwise.db`).
+
+To use **Supabase Postgres** instead, set `DATABASE_URL` to the URI from  
+Supabase → **Project Settings → Database → Connection string (URI)**, then restart the backend.  
+Details: [backend/README.md](./backend/README.md#supabase-recommended-hosted-postgres).
 
 **Frontend:**
 ```bash
