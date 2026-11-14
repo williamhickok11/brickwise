@@ -16,8 +16,10 @@ func RegisterRoutes(
 	dashboardService *service.DashboardService,
 	qboService *service.QBOService,
 	documentService *service.DocumentService,
+	propertyImageService *service.PropertyImageService,
 ) {
-	propertyHandler := NewPropertyHandler(propertyService)
+	propertyHandler := NewPropertyHandler(propertyService, propertyImageService)
+	propertyImageHandler := NewPropertyImageHandler(propertyImageService)
 	timeEntryHandler := NewTimeEntryHandler(timeEntryService)
 	residenceHandler := NewResidenceHandler(residenceService)
 	mortgageHandler := NewMortgageHandler(mortgageService)
@@ -46,6 +48,11 @@ func RegisterRoutes(
 		r.Get("/{id}/mortgage", mortgageHandler.GetMortgage)
 		r.Put("/{id}/mortgage", mortgageHandler.UpsertMortgage)
 		r.Delete("/{id}/mortgage", mortgageHandler.DeleteMortgage)
+		r.Get("/{id}/images", propertyImageHandler.ListImages)
+		r.Post("/{id}/images", propertyImageHandler.UploadImage)
+		r.Get("/{id}/images/{imageId}/file", propertyImageHandler.ServeImage)
+		r.Put("/{id}/images/{imageId}/main", propertyImageHandler.SetMainImage)
+		r.Delete("/{id}/images/{imageId}", propertyImageHandler.DeleteImage)
 		r.Delete("/{id}", propertyHandler.DeleteProperty)
 	})
 

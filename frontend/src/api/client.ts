@@ -16,6 +16,7 @@ import type {
 } from '@/types/time_entry'
 import type { PropertyQBOMappingInput, QBOClass, QBOStatus, QBOSyncResult } from '@/types/qbo'
 import type { DocumentMeta } from '@/types/document'
+import type { PropertyImage } from '@/types/property_image'
 
 const client = axios.create({
   baseURL: '/api/v1',
@@ -207,5 +208,33 @@ export const documentApi = {
     return client
       .get(`/residences/${residenceId}/document/download`, { responseType: 'blob' })
       .then((res) => res.data)
+  },
+}
+
+export function propertyImageFileUrl(propertyId: number, imageId: number): string {
+  return `/api/v1/properties/${propertyId}/images/${imageId}/file`
+}
+
+export const propertyImageApi = {
+  list: (propertyId: number): Promise<PropertyImage[]> => {
+    return client.get(`/properties/${propertyId}/images`).then((res) => res.data ?? [])
+  },
+
+  upload: (propertyId: number, file: File): Promise<PropertyImage> => {
+    const form = new FormData()
+    form.append('file', file)
+    return client
+      .post(`/properties/${propertyId}/images`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((res) => res.data)
+  },
+
+  setMain: (propertyId: number, imageId: number): Promise<PropertyImage> => {
+    return client.put(`/properties/${propertyId}/images/${imageId}/main`).then((res) => res.data)
+  },
+
+  delete: (propertyId: number, imageId: number): Promise<void> => {
+    return client.delete(`/properties/${propertyId}/images/${imageId}`).then(() => undefined)
   },
 }

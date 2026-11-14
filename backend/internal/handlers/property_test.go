@@ -80,7 +80,7 @@ func (m *mockPropertyRepository) UpdateValue(id int, currentValue float64, value
 func TestCreateProperty(t *testing.T) {
 	mockRepo := newMockPropertyRepository()
 	svc := service.NewPropertyService(mockRepo)
-	handler := NewPropertyHandler(svc)
+	handler := NewPropertyHandler(svc, nil)
 
 	reqBody := models.CreatePropertyRequest{
 		Name:         "Test Property",
@@ -121,7 +121,7 @@ func TestGetProperty(t *testing.T) {
 	}
 	property, _ := svc.CreateProperty(createReq)
 
-	handler := NewPropertyHandler(svc)
+	handler := NewPropertyHandler(svc, nil)
 
 	r := chi.NewRouter()
 	r.Get("/properties/{id}", handler.GetProperty)
@@ -152,7 +152,7 @@ func TestGetProperty(t *testing.T) {
 func TestGetPropertyNotFound(t *testing.T) {
 	mockRepo := newMockPropertyRepository()
 	svc := service.NewPropertyService(mockRepo)
-	handler := NewPropertyHandler(svc)
+	handler := NewPropertyHandler(svc, nil)
 
 	r := chi.NewRouter()
 	r.Get("/properties/{id}", handler.GetProperty)

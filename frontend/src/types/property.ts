@@ -17,6 +17,7 @@ export interface Property {
   default_mileage: number
   current_value: number
   value_updated_at: string | null
+  main_image_id: number | null
   created_at: string
   updated_at: string
 }
