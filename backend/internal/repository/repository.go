@@ -73,7 +73,7 @@ func (r *SQLPropertyRepository) Create(property *models.Property) error {
 func (r *SQLPropertyRepository) GetByID(id int) (*models.Property, error) {
 	property := &models.Property{}
 	query := `SELECT id, name, address, property_type, default_mileage, current_value, value_updated_at,
-	                 (SELECT id FROM property_images WHERE property_id = properties.id AND is_main = 1 LIMIT 1) AS main_image_id,
+	                 (SELECT id FROM property_images WHERE property_id = properties.id AND is_main = TRUE LIMIT 1) AS main_image_id,
 	                 created_at, updated_at
 	          FROM properties
 	          WHERE id = $1`
@@ -104,7 +104,7 @@ func (r *SQLPropertyRepository) GetByID(id int) (*models.Property, error) {
 // GetAll retrieves all properties
 func (r *SQLPropertyRepository) GetAll() ([]*models.Property, error) {
 	query := `SELECT id, name, address, property_type, default_mileage, current_value, value_updated_at,
-	                 (SELECT id FROM property_images WHERE property_id = properties.id AND is_main = 1 LIMIT 1) AS main_image_id,
+	                 (SELECT id FROM property_images WHERE property_id = properties.id AND is_main = TRUE LIMIT 1) AS main_image_id,
 	                 created_at, updated_at
 	          FROM properties
 	          ORDER BY created_at DESC`

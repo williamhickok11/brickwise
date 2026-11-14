@@ -70,16 +70,12 @@ func (r *SQLPropertyImageRepository) GetByID(id int) (*models.PropertyImage, err
 }
 
 func (r *SQLPropertyImageRepository) Create(img *models.PropertyImage) error {
-	isMain := 0
-	if img.IsMain {
-		isMain = 1
-	}
-
+	// Pass bool so Postgres BOOLEAN and SQLite INTEGER (0/1) both accept the value.
 	if r.isSQLite {
 		result, err := r.db.Exec(
 			`INSERT INTO property_images (property_id, file_name, content_type, size, is_main)
 			 VALUES ($1, $2, $3, $4, $5)`,
-			img.PropertyID, img.FileName, img.ContentType, img.Size, isMain,
+			img.PropertyID, img.FileName, img.ContentType, img.Size, img.IsMain,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to insert property image: %w", err)
@@ -97,7 +93,7 @@ func (r *SQLPropertyImageRepository) Create(img *models.PropertyImage) error {
 	query := `INSERT INTO property_images (property_id, file_name, content_type, size, is_main)
 	          VALUES ($1, $2, $3, $4, $5)
 	          RETURNING id, created_at`
-	return r.db.QueryRow(query, img.PropertyID, img.FileName, img.ContentType, img.Size, isMain).
+	return r.db.QueryRow(query, img.PropertyID, img.FileName, img.ContentType, img.Size, img.IsMain).
 		Scan(&img.ID, &img.CreatedAt)
 }
 
@@ -132,7 +128,7 @@ func (r *SQLPropertyImageRepository) Delete(id int) error {
 }
 
 func (r *SQLPropertyImageRepository) ClearMain(propertyID int) error {
-	_, err := r.db.Exec(`UPDATE property_images SET is_main = 0 WHERE property_id = $1`, propertyID)
+	_, err := r.db.Exec(`UPDATE property_images SET is_main = FALSE WHERE property_id = $1`, propertyID)
 	if err != nil {
 		return fmt.Errorf("failed to clear main image: %w", err)
 	}
@@ -146,11 +142,11 @@ func (r *SQLPropertyImageRepository) SetMain(propertyID, imageID int) error {
 	}
 	defer tx.Rollback()
 
-	if _, err := tx.Exec(`UPDATE property_images SET is_main = 0 WHERE property_id = $1`, propertyID); err != nil {
+	if _, err := tx.Exec(`UPDATE property_images SET is_main = FALSE WHERE property_id = $1`, propertyID); err != nil {
 		return fmt.Errorf("failed to clear main image: %w", err)
 	}
 	result, err := tx.Exec(
-		`UPDATE property_images SET is_main = 1 WHERE id = $1 AND property_id = $2`,
+		`UPDATE property_images SET is_main = TRUE WHERE id = $1 AND property_id = $2`,
 		imageID, propertyID,
 	)
 	if err != nil {
