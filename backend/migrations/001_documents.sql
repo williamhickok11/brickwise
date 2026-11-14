@@ -1,5 +1,6 @@
 -- Lease PDF documents attached to residences (one per residence).
--- Applied automatically by db.createTables on server start.
+-- Schema is applied automatically by db.createTables on server start.
+-- This file documents the DDL for manual runs.
 
 -- SQLite
 CREATE TABLE IF NOT EXISTS documents (
@@ -11,7 +12,7 @@ CREATE TABLE IF NOT EXISTS documents (
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Postgres equivalent:
+-- Postgres / Supabase
 -- CREATE TABLE IF NOT EXISTS documents (
 -- 	id SERIAL PRIMARY KEY,
 -- 	residence_id INTEGER NOT NULL UNIQUE REFERENCES residences(id) ON DELETE CASCADE,

@@ -3,28 +3,46 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
+
+	"brickwise/backend/internal/logger"
 
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// InitDB initializes the database connection
-// Supports both SQLite (default) and Postgres (via DATABASE_URL env var)
-// Tradeoff: Simple env-based detection. For production, consider explicit config.
+// InitDB initializes the database connection.
+//
+// - If DATABASE_URL is set, connects to Postgres (including Supabase).
+// - Otherwise falls back to local SQLite (DB_PATH or ./brickwise.db).
+//
+// Schema is created/updated automatically via createTables on startup.
+// Do not put credentials in code — set DATABASE_URL in the environment.
 func InitDB() (*sql.DB, error) {
-	var db *sql.DB
-	var err error
+	log := logger.Default()
+	dbURL := strings.TrimSpace(os.Getenv("DATABASE_URL"))
 
-	dbURL := os.Getenv("DATABASE_URL")
+	var (
+		db  *sql.DB
+		err error
+	)
+
 	if dbURL != "" {
-		// Postgres connection
-		db, err = sql.Open("postgres", dbURL)
+		normalized, errNorm := normalizePostgresURL(dbURL)
+		if errNorm != nil {
+			return nil, fmt.Errorf("invalid DATABASE_URL: %w", errNorm)
+		}
+		db, err = sql.Open("postgres", normalized)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open postgres connection: %w", err)
 		}
+		// Supabase pooler / free-tier friendly defaults
+		db.SetMaxOpenConns(10)
+		db.SetMaxIdleConns(5)
+		log.Info("Using Postgres database (DATABASE_URL)")
 	} else {
-		// SQLite connection (default for development)
 		dbPath := os.Getenv("DB_PATH")
 		if dbPath == "" {
 			dbPath = "./brickwise.db"
@@ -33,33 +51,68 @@ func InitDB() (*sql.DB, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to open sqlite connection: %w", err)
 		}
+		db.SetMaxOpenConns(25)
+		db.SetMaxIdleConns(5)
+		log.Info("Using SQLite database", "path", dbPath)
 	}
-
-	// Set connection pool settings
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
 
 	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		_ = db.Close()
+		if dbURL != "" {
+			return nil, fmt.Errorf("failed to ping postgres (check DATABASE_URL, password, and sslmode): %w", err)
+		}
+		return nil, fmt.Errorf("failed to ping sqlite: %w", err)
 	}
 
-	// Create tables
 	if err := createTables(db); err != nil {
+		_ = db.Close()
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
 
 	return db, nil
 }
 
-// createTables creates the database schema
-// Uses SQL that works for both SQLite and Postgres
-// Tradeoff: Detects database type via connection string/env var
+// UsingPostgres reports whether DATABASE_URL is set (Postgres / Supabase mode).
+func UsingPostgres() bool {
+	return strings.TrimSpace(os.Getenv("DATABASE_URL")) != ""
+}
+
+// normalizePostgresURL accepts postgres:// or postgresql:// URLs and ensures
+// Supabase hosts have sslmode=require when unset. Never logs the password.
+func normalizePostgresURL(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", fmt.Errorf("empty connection string")
+	}
+
+	// lib/pq accepts both; normalize scheme for consistent parsing.
+	if strings.HasPrefix(raw, "postgresql://") {
+		raw = "postgres://" + strings.TrimPrefix(raw, "postgresql://")
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", err
+	}
+	if u.Scheme != "postgres" && u.Scheme != "postgresql" {
+		return "", fmt.Errorf("unsupported scheme %q (expected postgres:// or postgresql://)", u.Scheme)
+	}
+
+	q := u.Query()
+	host := strings.ToLower(u.Hostname())
+	if q.Get("sslmode") == "" && (strings.Contains(host, "supabase.co") || strings.Contains(host, "supabase.com")) {
+		q.Set("sslmode", "require")
+	}
+	u.RawQuery = q.Encode()
+	return u.String(), nil
+}
+
+// createTables creates the database schema for SQLite or Postgres.
 func createTables(db *sql.DB) error {
-	dbURL := os.Getenv("DATABASE_URL")
+	isPostgres := UsingPostgres()
 	var createTableSQL string
 
-	if dbURL != "" {
-		// Postgres
+	if isPostgres {
 		createTableSQL = `CREATE TABLE IF NOT EXISTS properties (
 			id SERIAL PRIMARY KEY,
 			name VARCHAR(255) NOT NULL,
@@ -70,7 +123,6 @@ func createTables(db *sql.DB) error {
 			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)`
 	} else {
-		// SQLite
 		createTableSQL = `CREATE TABLE IF NOT EXISTS properties (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
@@ -86,9 +138,7 @@ func createTables(db *sql.DB) error {
 		return fmt.Errorf("failed to create properties table: %w", err)
 	}
 
-	// Add default_mileage column if it doesn't exist (for existing databases)
-	if dbURL != "" {
-		// Postgres: check if column exists and add if not
+	if isPostgres {
 		alterSQL := `DO $$ 
 		BEGIN 
 			IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
@@ -98,13 +148,10 @@ func createTables(db *sql.DB) error {
 		END $$;`
 		db.Exec(alterSQL)
 	} else {
-		// SQLite: add column if it doesn't exist
-		alterSQL := `ALTER TABLE properties ADD COLUMN default_mileage REAL DEFAULT 0`
-		db.Exec(alterSQL) // Ignore error if column already exists
+		db.Exec(`ALTER TABLE properties ADD COLUMN default_mileage REAL DEFAULT 0`)
 	}
 
-	// Add financial columns to properties
-	if dbURL != "" {
+	if isPostgres {
 		alterFinancialSQL := `DO $$
 		BEGIN
 			IF NOT EXISTS (SELECT 1 FROM information_schema.columns
@@ -122,9 +169,7 @@ func createTables(db *sql.DB) error {
 		db.Exec(`ALTER TABLE properties ADD COLUMN value_updated_at DATETIME NULL`)
 	}
 
-	// Create residences table (tenant/lease history)
-	if dbURL != "" {
-		// Postgres
+	if isPostgres {
 		createResidencesSQL := `CREATE TABLE IF NOT EXISTS residences (
 			id SERIAL PRIMARY KEY,
 			property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
@@ -141,7 +186,6 @@ func createTables(db *sql.DB) error {
 			return fmt.Errorf("failed to create residences table: %w", err)
 		}
 	} else {
-		// SQLite
 		createResidencesSQL := `CREATE TABLE IF NOT EXISTS residences (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
@@ -159,8 +203,7 @@ func createTables(db *sql.DB) error {
 		}
 	}
 
-	// Add monthly_rent to residences
-	if dbURL != "" {
+	if isPostgres {
 		alterRentSQL := `DO $$
 		BEGIN
 			IF NOT EXISTS (SELECT 1 FROM information_schema.columns
@@ -173,8 +216,7 @@ func createTables(db *sql.DB) error {
 		db.Exec(`ALTER TABLE residences ADD COLUMN monthly_rent REAL DEFAULT 0`)
 	}
 
-	// Create mortgages table (1:1 optional with property)
-	if dbURL != "" {
+	if isPostgres {
 		createMortgagesSQL := `CREATE TABLE IF NOT EXISTS mortgages (
 			id SERIAL PRIMARY KEY,
 			property_id INTEGER NOT NULL UNIQUE REFERENCES properties(id) ON DELETE CASCADE,
@@ -212,9 +254,7 @@ func createTables(db *sql.DB) error {
 		}
 	}
 
-	// Create time_entries table
-	if dbURL != "" {
-		// Postgres
+	if isPostgres {
 		createTimeEntriesSQL := `CREATE TABLE IF NOT EXISTS time_entries (
 			id SERIAL PRIMARY KEY,
 			property_id INTEGER REFERENCES properties(id) ON DELETE SET NULL,
@@ -232,7 +272,6 @@ func createTables(db *sql.DB) error {
 			return fmt.Errorf("failed to create time_entries table: %w", err)
 		}
 	} else {
-		// SQLite
 		createTimeEntriesSQL := `CREATE TABLE IF NOT EXISTS time_entries (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			property_id INTEGER REFERENCES properties(id) ON DELETE SET NULL,
@@ -251,15 +290,13 @@ func createTables(db *sql.DB) error {
 		}
 	}
 
-	if err := createQBOTables(db, dbURL != ""); err != nil {
+	if err := createQBOTables(db, isPostgres); err != nil {
 		return err
 	}
-
-	if err := createDocumentsTable(db, dbURL != ""); err != nil {
+	if err := createDocumentsTable(db, isPostgres); err != nil {
 		return err
 	}
-
-	if err := createPropertyImagesTable(db, dbURL != ""); err != nil {
+	if err := createPropertyImagesTable(db, isPostgres); err != nil {
 		return err
 	}
 
