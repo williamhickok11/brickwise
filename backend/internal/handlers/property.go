@@ -15,15 +15,17 @@ import (
 
 // PropertyHandler handles HTTP requests for properties
 type PropertyHandler struct {
-	service *service.PropertyService
-	logger  *logger.Logger
+	service      *service.PropertyService
+	imageService *service.PropertyImageService
+	logger       *logger.Logger
 }
 
 // NewPropertyHandler creates a new property handler
-func NewPropertyHandler(service *service.PropertyService) *PropertyHandler {
+func NewPropertyHandler(service *service.PropertyService, imageService *service.PropertyImageService) *PropertyHandler {
 	return &PropertyHandler{
-		service: service,
-		logger:  logger.Default(),
+		service:      service,
+		imageService: imageService,
+		logger:       logger.Default(),
 	}
 }
 
@@ -132,6 +134,9 @@ func (h *PropertyHandler) DeleteProperty(w http.ResponseWriter, r *http.Request)
 	if err := h.service.DeleteProperty(id); err != nil {
 		h.handleError(w, r, err)
 		return
+	}
+	if h.imageService != nil {
+		h.imageService.CleanupForProperty(id)
 	}
 
 	w.WriteHeader(http.StatusNoContent)

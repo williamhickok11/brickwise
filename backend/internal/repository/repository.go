@@ -72,10 +72,12 @@ func (r *SQLPropertyRepository) Create(property *models.Property) error {
 // GetByID retrieves a property by ID
 func (r *SQLPropertyRepository) GetByID(id int) (*models.Property, error) {
 	property := &models.Property{}
-	query := `SELECT id, name, address, property_type, default_mileage, current_value, value_updated_at, created_at, updated_at 
-	          FROM properties 
+	query := `SELECT id, name, address, property_type, default_mileage, current_value, value_updated_at,
+	                 (SELECT id FROM property_images WHERE property_id = properties.id AND is_main = 1 LIMIT 1) AS main_image_id,
+	                 created_at, updated_at
+	          FROM properties
 	          WHERE id = $1`
-	
+
 	err := r.db.QueryRow(query, id).Scan(
 		&property.ID,
 		&property.Name,
@@ -84,32 +86,35 @@ func (r *SQLPropertyRepository) GetByID(id int) (*models.Property, error) {
 		&property.DefaultMileage,
 		&property.CurrentValue,
 		&property.ValueUpdatedAt,
+		&property.MainImageID,
 		&property.CreatedAt,
 		&property.UpdatedAt,
 	)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("property with id %d not found", id)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get property: %w", err)
 	}
-	
+
 	return property, nil
 }
 
 // GetAll retrieves all properties
 func (r *SQLPropertyRepository) GetAll() ([]*models.Property, error) {
-	query := `SELECT id, name, address, property_type, default_mileage, current_value, value_updated_at, created_at, updated_at 
-	          FROM properties 
+	query := `SELECT id, name, address, property_type, default_mileage, current_value, value_updated_at,
+	                 (SELECT id FROM property_images WHERE property_id = properties.id AND is_main = 1 LIMIT 1) AS main_image_id,
+	                 created_at, updated_at
+	          FROM properties
 	          ORDER BY created_at DESC`
-	
+
 	rows, err := r.db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query properties: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var properties []*models.Property
 	for rows.Next() {
 		property := &models.Property{}
@@ -121,6 +126,7 @@ func (r *SQLPropertyRepository) GetAll() ([]*models.Property, error) {
 			&property.DefaultMileage,
 			&property.CurrentValue,
 			&property.ValueUpdatedAt,
+			&property.MainImageID,
 			&property.CreatedAt,
 			&property.UpdatedAt,
 		); err != nil {
@@ -128,11 +134,11 @@ func (r *SQLPropertyRepository) GetAll() ([]*models.Property, error) {
 		}
 		properties = append(properties, property)
 	}
-	
+
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating properties: %w", err)
 	}
-	
+
 	return properties, nil
 }
 

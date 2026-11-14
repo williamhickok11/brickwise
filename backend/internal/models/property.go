@@ -10,6 +10,7 @@ type Property struct {
 	DefaultMileage float64    `json:"default_mileage"`
 	CurrentValue   float64    `json:"current_value"`
 	ValueUpdatedAt *time.Time `json:"value_updated_at"`
+	MainImageID    *int       `json:"main_image_id"`
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
 }

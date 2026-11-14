@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import PropertiesView from '../views/PropertiesView.vue'
+import PropertyEditView from '../views/PropertyEditView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import ResidencesView from '../views/ResidencesView.vue'
 import REPSView from '../views/REPSView.vue'
@@ -21,6 +22,11 @@ const router = createRouter({
       path: '/properties',
       name: 'properties',
       component: PropertiesView,
+    },
+    {
+      path: '/properties/:id/edit',
+      name: 'property-edit',
+      component: PropertyEditView,
     },
     {
       path: '/residences',

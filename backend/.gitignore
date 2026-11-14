@@ -6,6 +6,9 @@
 # Local lease PDF storage
 data/documents/
 
+# Local property image storage
+data/property-images/
+
 # Binaries
 brickwise
 brickwise.exe
