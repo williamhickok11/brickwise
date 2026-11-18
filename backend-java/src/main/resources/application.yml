@@ -1,0 +1,17 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: brickwise
+  datasource:
+    # The Go API creates this file. The path is relative to the directory you start from (backend-java).
+    # SQLite allows one writer, so the pool stays at a single connection.
+    url: ${BRICKWISE_DB_URL:jdbc:sqlite:file:../backend/brickwise.db}
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    serialization:
+      write-dates-as-timestamps: false
