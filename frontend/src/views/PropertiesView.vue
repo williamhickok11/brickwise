@@ -259,7 +259,7 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--p-primary-300, #7eb8dc);
+  color: var(--p-primary-300, #66c0ba);
   font-size: 1.35rem;
 }
 
