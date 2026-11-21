@@ -1,68 +1,23 @@
 # Brickwise
 
-Landlord/investor property management application.
+Project brief for agents and contributors. This is what the project is for and where it is headed.
 
-> 📋 **Product Decisions:** See [PRODUCT_DECISIONS.md](./PRODUCT_DECISIONS.md) for UX philosophy, feature decisions, and architectural choices.
+## Primary goal
 
-## Stack
+Rebuild an apartments.com-like application to replace managing the caller's properties and tenants, and eventually build leases.
 
-- **Frontend**: Vue 3 + TypeScript + Vite
-- **Backend**: Go REST API
-- **Database**: SQLite (dev) → PostgreSQL (production)
+**Features to build (in order of intent):**
 
-## Quick Start
+1. **Properties** — manage the caller's properties
+2. **Tenants** — manage tenants for those properties
+3. **Leases** — eventually build leases
 
-### Prerequisites
+## Secondary goal
 
-- Node.js 18+ and npm/yarn/pnpm
-- Go 1.21+
+A Java learning tutorial. The caller is a C#/.NET developer pivoting to Java and needs a pet project for that, so document everything in Java.
 
-### Development
+## For a fresh agent
 
-**Backend:**
-```bash
-cd backend
-go mod download
-go run cmd/server/main.go
-```
-Server runs on `http://localhost:8080` with **SQLite** by default (`backend/brickwise.db`).
-
-To use **Supabase Postgres** instead, set `DATABASE_URL` to the URI from  
-Supabase → **Project Settings → Database → Connection string (URI)**, then restart the backend.  
-Details: [backend/README.md](./backend/README.md#supabase-recommended-hosted-postgres).
-
-**Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Frontend runs on `http://localhost:5173`
-
-## Project Structure
-
-```
-├── frontend/          # Vue 3 + TypeScript app
-│   ├── src/
-│   │   ├── api/      # API client
-│   │   ├── components/
-│   │   ├── views/
-│   │   ├── stores/   # Pinia stores
-│   │   └── types/    # TypeScript types
-│   └── ...
-├── backend/           # Go REST API
-│   ├── cmd/          # Application entrypoints
-│   ├── internal/     # Private application code
-│   │   ├── handlers/ # HTTP handlers
-│   │   ├── models/   # Data models
-│   │   ├── db/       # Database layer
-│   │   └── middleware/
-│   └── ...
-└── README.md
-```
-
-## Architecture Notes
-
-- **Simple & Boring**: Standard patterns, minimal abstractions
-- **Fast Iteration**: Hot reload on both sides, minimal build steps
-- **Clean Seams**: Easy to swap components (DB, auth, etc.) later
+- Optimize for the primary product goal (properties → tenants → leases) unless the task is explicitly about learning/docs.
+- Prefer Java for new backend work and for documentation that teaches the stack.
+- Do not invent product scope beyond properties, tenants, and leases unless the caller asks for it.
