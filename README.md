@@ -37,3 +37,4 @@ Instructions for in-flight work on this branch (carry as stated):
 - `backend-go/` — previous Go API, kept for reference while learning/comparing
 - `frontend/` — Vue 3 app
 - `backend/LEARNING.md` — C# /.NET → Java guide for reviewers
+- `TENNESSEE_LEASE_REQUIREMENTS.md` — Davidson County / Nashville lease-law notes for a future lease builder (research only; feature not started)
