@@ -36,7 +36,7 @@ button {
   font-family: inherit;
 }
 
-/* All PrimeVue buttons use the blue primary palette */
+/* All PrimeVue buttons use the light green primary palette */
 .p-button.p-button-secondary,
 .p-button.p-button-success,
 .p-button.p-button-info,
@@ -44,8 +44,8 @@ button {
 .p-button.p-button-help,
 .p-button.p-button-danger,
 .p-button.p-button-contrast {
-  background: var(--p-primary-color, #1a6fb5);
-  border-color: var(--p-primary-color, #1a6fb5);
+  background: var(--p-primary-color, #81c784);
+  border-color: var(--p-primary-color, #81c784);
   color: var(--p-primary-contrast-color, #ffffff);
 }
 
@@ -56,8 +56,8 @@ button {
 .p-button.p-button-help:not(:disabled):hover,
 .p-button.p-button-danger:not(:disabled):hover,
 .p-button.p-button-contrast:not(:disabled):hover {
-  background: var(--p-primary-hover-color, #155d9a);
-  border-color: var(--p-primary-hover-color, #155d9a);
+  background: var(--p-primary-hover-color, #66bb6a);
+  border-color: var(--p-primary-hover-color, #66bb6a);
   color: var(--p-primary-contrast-color, #ffffff);
 }
 
@@ -69,8 +69,8 @@ button {
 .p-button.p-button-outlined.p-button-danger,
 .p-button.p-button-outlined.p-button-contrast {
   background: transparent;
-  border-color: var(--p-primary-color, #1a6fb5);
-  color: var(--p-primary-color, #1a6fb5);
+  border-color: var(--p-primary-color, #81c784);
+  color: var(--p-primary-color, #81c784);
 }
 
 .p-button.p-button-outlined.p-button-secondary:not(:disabled):hover,
@@ -80,9 +80,9 @@ button {
 .p-button.p-button-outlined.p-button-help:not(:disabled):hover,
 .p-button.p-button-outlined.p-button-danger:not(:disabled):hover,
 .p-button.p-button-outlined.p-button-contrast:not(:disabled):hover {
-  background: color-mix(in srgb, var(--p-primary-color, #1a6fb5) 8%, transparent);
-  border-color: var(--p-primary-color, #1a6fb5);
-  color: var(--p-primary-color, #1a6fb5);
+  background: color-mix(in srgb, var(--p-primary-color, #81c784) 8%, transparent);
+  border-color: var(--p-primary-color, #81c784);
+  color: var(--p-primary-color, #81c784);
 }
 
 .p-button.p-button-text.p-button-secondary,
@@ -94,7 +94,7 @@ button {
 .p-button.p-button-text.p-button-contrast {
   background: transparent;
   border-color: transparent;
-  color: var(--p-primary-color, #1a6fb5);
+  color: var(--p-primary-color, #81c784);
 }
 
 .p-button.p-button-text.p-button-secondary:not(:disabled):hover,
@@ -104,9 +104,9 @@ button {
 .p-button.p-button-text.p-button-help:not(:disabled):hover,
 .p-button.p-button-text.p-button-danger:not(:disabled):hover,
 .p-button.p-button-text.p-button-contrast:not(:disabled):hover {
-  background: color-mix(in srgb, var(--p-primary-color, #1a6fb5) 8%, transparent);
+  background: color-mix(in srgb, var(--p-primary-color, #81c784) 8%, transparent);
   border-color: transparent;
-  color: var(--p-primary-color, #1a6fb5);
+  color: var(--p-primary-color, #81c784);
 }
 
 input,
@@ -116,7 +116,7 @@ select {
 }
 
 :focus-visible {
-  outline: 2px solid var(--p-primary-500, #1a6fb5);
+  outline: 2px solid var(--p-primary-500, #81c784);
   outline-offset: 2px;
 }
 
