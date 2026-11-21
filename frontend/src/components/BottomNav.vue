@@ -32,11 +32,12 @@ const navItems = [
   display: flex;
   justify-content: space-around;
   align-items: stretch;
-  background: var(--p-surface-0, #fff);
-  border-top: 1px solid var(--p-surface-200, #e2e8f0);
+  background: color-mix(in srgb, var(--surface, #fffdf9) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border-subtle, #e4ddd2);
   padding: 0.35rem 0 calc(0.35rem + env(safe-area-inset-bottom, 0px));
   z-index: 1000;
-  box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 -6px 20px rgba(42, 38, 34, 0.06);
 }
 
 .nav-item {
@@ -49,8 +50,13 @@ const navItems = [
   min-height: 3.25rem;
   text-decoration: none;
   color: var(--text-secondary);
-  transition: color 0.2s;
   flex: 1;
+  border-radius: 0.5rem;
+}
+
+.nav-item:hover {
+  color: var(--text-primary);
+  transform: translateY(-1px);
 }
 
 .nav-item .pi {
@@ -58,7 +64,7 @@ const navItems = [
 }
 
 .nav-item.active {
-  color: var(--p-primary-500, #1a6fb5);
+  color: var(--p-primary-500, var(--accent, #0f766e));
 }
 
 .nav-label {

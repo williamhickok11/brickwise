@@ -30,3 +30,10 @@ Instructions for in-flight work on this branch (carry as stated):
 - Prefer Java for new backend work and for documentation that teaches the stack.
 - On this branch: convert/fill out the backend in Java and keep learning docs current; wait for the caller before starting any new product feature.
 - Do not invent product scope beyond properties, tenants, and leases unless the caller asks for it.
+
+## Layout (this branch)
+
+- `backend/` — Java Spring Boot API (active)
+- `backend-go/` — previous Go API, kept for reference while learning/comparing
+- `frontend/` — Vue 3 app
+- `backend/LEARNING.md` — C# /.NET → Java guide for reviewers

@@ -3,20 +3,21 @@ import Aura from '@primevue/themes/aura'
 import { definePreset } from '@primevue/themes'
 import type { App } from 'vue'
 
+/** Deep teal primary — strong accent on warm neutrals. */
 const BrickwisePreset = definePreset(Aura, {
   semantic: {
     primary: {
-      50: '#e8f4fc',
-      100: '#c5e3f6',
-      200: '#9ecfef',
-      300: '#6eb8e5',
-      400: '#3d9ed9',
-      500: '#1a6fb5',
-      600: '#155d9a',
-      700: '#114b7d',
-      800: '#0d3a61',
-      900: '#092a47',
-      950: '#061c30',
+      50: '#e6f5f4',
+      100: '#c0e6e3',
+      200: '#96d5d1',
+      300: '#66c0ba',
+      400: '#3aa39c',
+      500: '#0f766e',
+      600: '#0d635c',
+      700: '#0b524c',
+      800: '#08403c',
+      900: '#062e2b',
+      950: '#041f1d',
     },
   },
 })

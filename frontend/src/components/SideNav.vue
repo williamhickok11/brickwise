@@ -32,8 +32,9 @@ const navItems = [
 <style scoped>
 .side-nav {
   width: var(--sidebar-width);
-  background: #1e293b;
-  color: #f8fafc;
+  background:
+    linear-gradient(165deg, #2f2a26 0%, #241f1c 55%, #1c1917 100%);
+  color: #f7f2ea;
   height: 100vh;
   position: fixed;
   left: 0;
@@ -41,53 +42,58 @@ const navItems = [
   display: flex;
   flex-direction: column;
   z-index: 100;
+  border-right: 1px solid rgba(255, 253, 249, 0.06);
 }
 
 .nav-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1.25rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.35rem 1rem;
+  border-bottom: 1px solid rgba(255, 253, 249, 0.08);
 }
 
 .brand-icon {
   font-size: 1.25rem;
-  color: var(--p-primary-400, #3d9ed9);
+  color: var(--p-primary-300, #66c0ba);
 }
 
 .nav-header h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
   font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .nav-links {
   flex: 1;
-  padding: 0.75rem 0;
+  padding: 0.75rem 0.5rem;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.875rem 1.25rem;
+  padding: 0.8rem 1rem;
   min-height: 2.75rem;
-  color: rgba(248, 250, 252, 0.75);
+  margin: 0.15rem 0;
+  border-radius: 0.55rem;
+  color: rgba(247, 242, 234, 0.72);
   text-decoration: none;
-  transition: background 0.2s, color 0.2s;
-  border-left: 3px solid transparent;
+  border-left: none;
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: rgba(255, 253, 249, 0.08);
+  color: #fffdf9;
+  transform: translateY(-1px);
 }
 
 .nav-link.router-link-active {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border-left-color: var(--p-primary-400, #3d9ed9);
+  background: color-mix(in srgb, var(--accent, #0f766e) 28%, transparent);
+  color: #fffdf9;
+  box-shadow: inset 3px 0 0 var(--p-primary-400, #3aa39c);
 }
 
 .nav-link .pi {
@@ -95,7 +101,7 @@ const navItems = [
 }
 
 .nav-link span:last-child {
-  font-weight: 500;
+  font-weight: 600;
 }
 
 @media (max-width: 767px) {

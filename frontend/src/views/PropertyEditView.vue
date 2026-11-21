@@ -739,7 +739,7 @@ watch(
 }
 
 .photo-tile.is-main {
-  border-color: var(--p-primary-400, #3d9ed9);
+  border-color: var(--p-primary-400, #3aa39c);
   box-shadow: 0 0 0 1px var(--p-primary-200, #a8d4ef);
 }
 
