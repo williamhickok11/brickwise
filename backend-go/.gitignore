@@ -1,0 +1,18 @@
+# Database
+*.db
+*.db-shm
+*.db-wal
+
+# Local lease PDF storage
+data/documents/
+
+# Local property image storage
+data/property-images/
+
+# Binaries
+brickwise
+brickwise.exe
+
+# Test coverage
+*.out
+*.prof

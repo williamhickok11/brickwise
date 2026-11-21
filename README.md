@@ -1,64 +1,40 @@
 # Brickwise
 
-Landlord/investor property management application.
+Project brief for agents and contributors. This is what the project is for and where it is headed.
 
-> 📋 **Product Decisions:** See [PRODUCT_DECISIONS.md](./PRODUCT_DECISIONS.md) for UX philosophy, feature decisions, and architectural choices.
+## Primary goal
 
-## Stack
+Rebuild an apartments.com-like application to replace managing the caller's properties and tenants, and eventually build leases.
 
-- **Frontend**: Vue 3 + TypeScript + Vite
-- **Backend**: Go REST API
-- **Database**: SQLite (dev) → PostgreSQL (production)
+**Features to build (in order of intent):**
 
-## Quick Start
+1. **Properties** — manage the caller's properties
+2. **Tenants** — manage tenants for those properties
+3. **Leases** — eventually build leases
 
-### Prerequisites
+## Secondary goal
 
-- Node.js 18+ and npm/yarn/pnpm
-- Go 1.21+
+A Java learning tutorial. The caller is a C#/.NET developer pivoting to Java and needs a pet project for that, so document everything in Java.
 
-### Development
+## Current branch work
 
-**Backend:**
-```bash
-cd backend
-go mod download
-go run cmd/server/main.go
-```
-Server runs on `http://localhost:8080`
+Instructions for in-flight work on this branch (carry as stated):
 
-**Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Frontend runs on `http://localhost:5173`
+1. **Fill out the rest of the backend, converting it from Go to Java.**
+2. **Continuously document things for the caller's learning as a C#/.NET developer pivoting to Java,** so that when they review the code they can see how everything works.
+3. **Eventually add a new feature,** but the caller will pick what feature to do for that themselves — **do not choose or start a feature now.**
 
-## Project Structure
+## For a fresh agent
 
-```
-├── frontend/          # Vue 3 + TypeScript app
-│   ├── src/
-│   │   ├── api/      # API client
-│   │   ├── components/
-│   │   ├── views/
-│   │   ├── stores/   # Pinia stores
-│   │   └── types/    # TypeScript types
-│   └── ...
-├── backend/           # Go REST API
-│   ├── cmd/          # Application entrypoints
-│   ├── internal/     # Private application code
-│   │   ├── handlers/ # HTTP handlers
-│   │   ├── models/   # Data models
-│   │   ├── db/       # Database layer
-│   │   └── middleware/
-│   └── ...
-└── README.md
-```
+- Optimize for the primary product goal (properties → tenants → leases) unless the task is explicitly about learning/docs.
+- Prefer Java for new backend work and for documentation that teaches the stack.
+- On this branch: convert/fill out the backend in Java and keep learning docs current; wait for the caller before starting any new product feature.
+- Do not invent product scope beyond properties, tenants, and leases unless the caller asks for it.
 
-## Architecture Notes
+## Layout (this branch)
 
-- **Simple & Boring**: Standard patterns, minimal abstractions
-- **Fast Iteration**: Hot reload on both sides, minimal build steps
-- **Clean Seams**: Easy to swap components (DB, auth, etc.) later
+- `backend/` — Java Spring Boot API (active)
+- `backend-go/` — previous Go API, kept for reference while learning/comparing
+- `frontend/` — Vue 3 app
+- `backend/LEARNING.md` — C# /.NET → Java guide for reviewers
+- `TENNESSEE_LEASE_REQUIREMENTS.md` — Davidson County / Nashville lease-law notes for a future lease builder (research only; feature not started)

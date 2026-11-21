@@ -15,6 +15,8 @@ import type {
   TimeEntryFilter,
 } from '@/types/time_entry'
 import type { PropertyQBOMappingInput, QBOClass, QBOStatus, QBOSyncResult } from '@/types/qbo'
+import type { DocumentMeta } from '@/types/document'
+import type { PropertyImage } from '@/types/property_image'
 
 const client = axios.create({
   baseURL: '/api/v1',
@@ -184,5 +186,55 @@ export const residenceApi = {
 
   update: (id: number, data: UpdateResidenceRequest): Promise<Residence> => {
     return client.put(`/residences/${id}`, data).then((res) => res.data)
+  },
+}
+
+export const documentApi = {
+  get: (residenceId: number): Promise<DocumentMeta> => {
+    return client.get(`/residences/${residenceId}/document`).then((res) => res.data)
+  },
+
+  upload: (residenceId: number, file: File): Promise<DocumentMeta> => {
+    const form = new FormData()
+    form.append('file', file)
+    return client
+      .post(`/residences/${residenceId}/document`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((res) => res.data)
+  },
+
+  download: (residenceId: number): Promise<Blob> => {
+    return client
+      .get(`/residences/${residenceId}/document/download`, { responseType: 'blob' })
+      .then((res) => res.data)
+  },
+}
+
+export function propertyImageFileUrl(propertyId: number, imageId: number): string {
+  return `/api/v1/properties/${propertyId}/images/${imageId}/file`
+}
+
+export const propertyImageApi = {
+  list: (propertyId: number): Promise<PropertyImage[]> => {
+    return client.get(`/properties/${propertyId}/images`).then((res) => res.data ?? [])
+  },
+
+  upload: (propertyId: number, file: File): Promise<PropertyImage> => {
+    const form = new FormData()
+    form.append('file', file)
+    return client
+      .post(`/properties/${propertyId}/images`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((res) => res.data)
+  },
+
+  setMain: (propertyId: number, imageId: number): Promise<PropertyImage> => {
+    return client.put(`/properties/${propertyId}/images/${imageId}/main`).then((res) => res.data)
+  },
+
+  delete: (propertyId: number, imageId: number): Promise<void> => {
+    return client.delete(`/properties/${propertyId}/images/${imageId}`).then(() => undefined)
   },
 }

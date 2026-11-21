@@ -45,11 +45,11 @@
           </p>
         </div>
         <Button
-          v-if="!showAddForm"
+          v-if="!showResidentForm"
           label="Add resident"
           icon="pi pi-user-plus"
           size="large"
-          @click="showAddForm = true"
+          @click="openAdd"
         />
         <Button
           v-else
@@ -57,7 +57,7 @@
           icon="pi pi-times"
           outlined
           size="large"
-          @click="cancelAdd"
+          @click="cancelForm"
         />
       </div>
 
@@ -65,10 +65,10 @@
         {{ residenceStore.error }}
       </Message>
 
-      <Card v-if="showAddForm" class="mb-3">
-        <template #title>New resident</template>
+      <Card v-if="showResidentForm" class="mb-3">
+        <template #title>{{ editingId ? 'Edit resident' : 'New resident' }}</template>
         <template #content>
-          <form class="form-grid" @submit.prevent="handleAddResident">
+          <form class="form-grid" @submit.prevent="handleSubmit">
             <FloatLabel>
               <InputText id="r-name" v-model="form.name" required fluid />
               <label for="r-name">Name</label>
@@ -107,7 +107,7 @@
             </div>
             <Button
               type="submit"
-              label="Add resident"
+              :label="editingId ? 'Save changes' : 'Add resident'"
               icon="pi pi-check"
               size="large"
               class="submit-btn"
@@ -139,12 +139,45 @@
                   <span v-else-if="r.email"> · {{ r.email }}</span>
                 </div>
               </div>
-              <Button
-                label="Move out"
-                outlined
-                size="large"
-                @click="startMoveOut(r)"
-              />
+              <div class="resident-actions">
+                <input
+                  :ref="(el) => setFileInputRef(r.id, el)"
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  class="file-input"
+                  @change="(e) => onLeaseFileSelected(r.id, e)"
+                />
+                <Button
+                  v-if="documentsByResidence[r.id]"
+                  icon="pi pi-download"
+                  outlined
+                  size="large"
+                  aria-label="Download lease PDF"
+                  :loading="docBusyId === r.id"
+                  @click="downloadLease(r.id)"
+                />
+                <Button
+                  :label="documentsByResidence[r.id] ? 'Replace PDF' : 'Upload lease PDF'"
+                  icon="pi pi-file-pdf"
+                  outlined
+                  size="large"
+                  :loading="docBusyId === r.id"
+                  @click="triggerLeaseUpload(r.id)"
+                />
+                <Button
+                  icon="pi pi-pencil"
+                  outlined
+                  size="large"
+                  aria-label="Edit resident"
+                  @click="openEdit(r)"
+                />
+                <Button
+                  label="Move out"
+                  outlined
+                  size="large"
+                  @click="startMoveOut(r)"
+                />
+              </div>
             </div>
           </div>
 
@@ -206,6 +239,39 @@
                     <span v-if="r.phone"> · {{ r.phone }}</span>
                   </div>
                 </div>
+                <div class="resident-actions">
+                  <input
+                    :ref="(el) => setFileInputRef(r.id, el)"
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    class="file-input"
+                    @change="(e) => onLeaseFileSelected(r.id, e)"
+                  />
+                  <Button
+                    v-if="documentsByResidence[r.id]"
+                    icon="pi pi-download"
+                    outlined
+                    size="large"
+                    aria-label="Download lease PDF"
+                    :loading="docBusyId === r.id"
+                    @click="downloadLease(r.id)"
+                  />
+                  <Button
+                    :label="documentsByResidence[r.id] ? 'Replace PDF' : 'Upload lease PDF'"
+                    icon="pi pi-file-pdf"
+                    outlined
+                    size="large"
+                    :loading="docBusyId === r.id"
+                    @click="triggerLeaseUpload(r.id)"
+                  />
+                  <Button
+                    icon="pi pi-pencil"
+                    outlined
+                    size="large"
+                    aria-label="Edit resident"
+                    @click="openEdit(r)"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -227,9 +293,15 @@ import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
+import { documentApi } from '@/api/client'
 import { usePropertyStore } from '@/stores/property'
 import { useResidenceStore } from '@/stores/residence'
-import type { CreateResidenceRequest, UpdateResidenceRequest } from '@/types/residence'
+import type { DocumentMeta } from '@/types/document'
+import type {
+  CreateResidenceRequest,
+  Residence,
+  UpdateResidenceRequest,
+} from '@/types/residence'
 
 const propertyStore = usePropertyStore()
 const residenceStore = useResidenceStore()
@@ -239,7 +311,12 @@ const properties = computed(() => propertyStore.properties ?? [])
 
 const selectedPropertyId = ref<number | null>(null)
 const showAddForm = ref(false)
+const editingId = ref<number | null>(null)
 const showFormer = ref(false)
+const showResidentForm = computed(() => showAddForm.value || editingId.value !== null)
+const documentsByResidence = ref<Record<number, DocumentMeta>>({})
+const docBusyId = ref<number | null>(null)
+const fileInputs = ref<Record<number, HTMLInputElement | null>>({})
 
 const form = ref<CreateResidenceRequest>({
   property_id: 0,
@@ -311,18 +388,108 @@ watch(
   () => selectedPropertyId.value,
   async (id) => {
     if (id === null) return
-    showAddForm.value = false
+    cancelForm()
     showFormer.value = false
+    documentsByResidence.value = {}
     await residenceStore.fetchCurrentResidents(id)
     await residenceStore.fetchFormerResidents(id)
+    await loadDocumentsForLoadedResidents()
   },
 )
+
+function setFileInputRef(residenceId: number, el: unknown) {
+  fileInputs.value[residenceId] = (el as HTMLInputElement | null) ?? null
+}
+
+async function loadDocumentsForLoadedResidents() {
+  const residents = [
+    ...residenceStore.currentResidents,
+    ...residenceStore.formerResidents,
+  ]
+  const next: Record<number, DocumentMeta> = {}
+  await Promise.all(
+    residents.map(async (r) => {
+      try {
+        next[r.id] = await documentApi.get(r.id)
+      } catch {
+        // No document attached
+      }
+    }),
+  )
+  documentsByResidence.value = next
+}
+
+function triggerLeaseUpload(residenceId: number) {
+  fileInputs.value[residenceId]?.click()
+}
+
+async function onLeaseFileSelected(residenceId: number, event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  if (file.type && file.type !== 'application/pdf') {
+    toast.add({
+      severity: 'error',
+      summary: 'PDF only',
+      detail: 'Lease documents must be PDF files.',
+      life: 4000,
+    })
+    return
+  }
+
+  docBusyId.value = residenceId
+  try {
+    const meta = await documentApi.upload(residenceId, file)
+    documentsByResidence.value = {
+      ...documentsByResidence.value,
+      [residenceId]: meta,
+    }
+    toast.add({ severity: 'success', summary: 'Lease PDF saved', life: 3000 })
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'Upload failed',
+      detail: err instanceof Error ? err.message : undefined,
+      life: 5000,
+    })
+  } finally {
+    docBusyId.value = null
+  }
+}
+
+async function downloadLease(residenceId: number) {
+  docBusyId.value = residenceId
+  try {
+    const blob = await documentApi.download(residenceId)
+    const meta = documentsByResidence.value[residenceId]
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = meta?.file_name || `lease-${residenceId}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: 'Download failed',
+      detail: err instanceof Error ? err.message : undefined,
+      life: 5000,
+    })
+  } finally {
+    docBusyId.value = null
+  }
+}
 
 function selectProperty(propertyId: number) {
   selectedPropertyId.value = propertyId
 }
 
 function resetForm() {
+  editingId.value = null
   form.value = {
     property_id: selectedPropertyId.value ?? 0,
     name: '',
@@ -335,12 +502,34 @@ function resetForm() {
   }
 }
 
-function cancelAdd() {
+function openAdd() {
+  editingId.value = null
+  resetForm()
+  showAddForm.value = true
+}
+
+function openEdit(r: Residence) {
+  cancelMoveOut()
+  showAddForm.value = false
+  editingId.value = r.id
+  form.value = {
+    property_id: r.property_id,
+    name: r.name,
+    phone: r.phone ?? '',
+    email: r.email ?? '',
+    start_date: r.start_date,
+    end_date: r.end_date ?? undefined,
+    is_active: r.is_active,
+    monthly_rent: r.monthly_rent ?? 0,
+  }
+}
+
+function cancelForm() {
   showAddForm.value = false
   resetForm()
 }
 
-async function handleAddResident() {
+async function handleSubmit() {
   if (selectedPropertyId.value === null) return
 
   const data: CreateResidenceRequest = {
@@ -354,12 +543,25 @@ async function handleAddResident() {
     monthly_rent: form.value.monthly_rent ?? 0,
   }
 
-  await residenceStore.createResident(data)
-  await residenceStore.fetchCurrentResidents(selectedPropertyId.value)
-  await residenceStore.fetchFormerResidents(selectedPropertyId.value)
-  showAddForm.value = false
-  resetForm()
-  toast.add({ severity: 'success', summary: 'Resident added', life: 3000 })
+  try {
+    if (editingId.value !== null) {
+      const update: UpdateResidenceRequest = { ...data }
+      await residenceStore.updateResident(editingId.value, update)
+      await residenceStore.fetchCurrentResidents(selectedPropertyId.value)
+      await residenceStore.fetchFormerResidents(selectedPropertyId.value)
+      cancelForm()
+      toast.add({ severity: 'success', summary: 'Resident updated', life: 3000 })
+      return
+    }
+
+    await residenceStore.createResident(data)
+    await residenceStore.fetchCurrentResidents(selectedPropertyId.value)
+    await residenceStore.fetchFormerResidents(selectedPropertyId.value)
+    cancelForm()
+    toast.add({ severity: 'success', summary: 'Resident added', life: 3000 })
+  } catch {
+    // Error handled by store
+  }
 }
 
 const moveOutTargetId = ref<number | null>(null)
@@ -480,6 +682,18 @@ async function confirmMoveOut() {
   border-radius: var(--p-border-radius-md);
   background: var(--p-surface-50);
   border: 1px solid var(--p-surface-200);
+}
+
+.resident-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+
+.file-input {
+  display: none;
 }
 
 .resident-row.former {

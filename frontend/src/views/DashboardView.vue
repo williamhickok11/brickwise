@@ -255,7 +255,9 @@ onMounted(() => {
 
 .section-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 
@@ -353,15 +355,6 @@ onMounted(() => {
 .action-card.disabled {
   opacity: 0.55;
   pointer-events: none;
-}
-
-.action-card:not(.disabled) :deep(.p-card) {
-  transition: box-shadow 0.2s, transform 0.2s;
-}
-
-.action-card:not(.disabled):hover :deep(.p-card) {
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
-  transform: translateY(-2px);
 }
 
 @media (min-width: 768px) {
