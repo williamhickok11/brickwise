@@ -3,7 +3,11 @@
     <SideNav />
     <main class="main-content">
       <div class="page-container">
-        <router-view />
+        <router-view v-slot="{ Component, route }">
+          <Transition name="page-fade" mode="out-in">
+            <component :is="Component" :key="route.path" />
+          </Transition>
+        </router-view>
       </div>
     </main>
     <BottomNav />
@@ -26,7 +30,6 @@ import BottomNav from './components/BottomNav.vue'
 .main-content {
   flex: 1;
   margin-left: 0;
-  background: var(--page-bg);
   min-height: 100vh;
   padding-bottom: var(--nav-height-safe);
 }

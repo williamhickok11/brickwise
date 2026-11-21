@@ -2,19 +2,19 @@
 
 help:
 	@echo "Available commands:"
-	@echo "  make dev-backend    - Run backend server"
-	@echo "  make dev-frontend   - Run frontend dev server"
-	@echo "  make install-backend - Install Go dependencies"
+	@echo "  make dev-backend     - Run Java Spring Boot backend"
+	@echo "  make dev-frontend    - Run frontend dev server"
+	@echo "  make install-backend - Resolve Maven dependencies"
 	@echo "  make install-frontend - Install npm dependencies"
 
 dev-backend:
-	cd backend && go run cmd/server/main.go
+	cd backend && mvn spring-boot:run
 
 dev-frontend:
 	cd frontend && npm run dev
 
 install-backend:
-	cd backend && go mod download
+	cd backend && mvn -q dependency:resolve
 
 install-frontend:
 	cd frontend && npm install
