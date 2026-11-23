@@ -27,7 +27,9 @@ public class TimeEntryService {
         if (req.getPropertyId() != null) {
             propertyRepo.findById(req.getPropertyId()).orElseThrow(ApiException::notFound);
         }
-        return repo.create(fromRequest(req));
+        TimeEntry entry = fromRequest(req);
+        applyFullDriveMileage(entry);
+        return repo.create(entry);
     }
 
     public TimeEntry get(int id) {
@@ -45,6 +47,7 @@ public class TimeEntryService {
         }
         TimeEntry t = fromRequest(req);
         t.setId(id);
+        applyFullDriveMileage(t);
         try {
             repo.update(t);
         } catch (IllegalStateException e) {
@@ -72,5 +75,17 @@ public class TimeEntryService {
         t.setMileage(req.getMileage());
         t.setFullDrive(req.isFullDrive());
         return t;
+    }
+
+    /** When Full Drive is checked, fill mileage from the property's default round-trip miles. */
+    private void applyFullDriveMileage(TimeEntry entry) {
+        if (!entry.isFullDrive() || entry.getPropertyId() == null) {
+            return;
+        }
+        propertyRepo.findById(entry.getPropertyId()).ifPresent(property -> {
+            if (property.getDefaultMileage() > 0) {
+                entry.setMileage(property.getDefaultMileage());
+            }
+        });
     }
 }

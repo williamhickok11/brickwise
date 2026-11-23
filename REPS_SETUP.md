@@ -2,21 +2,21 @@
 
 ## ✅ What's Already Implemented
 
-### Backend (Go)
+### Backend (Java Spring Boot — active; Go kept for reference)
 - ✅ **Database Schema**: `time_entries` table created with all required fields
-- ✅ **Models**: `TimeEntry`, `CreateTimeEntryRequest`, `UpdateTimeEntryRequest`, `TimeEntryFilter`
-- ✅ **Repository Layer**: Full CRUD operations with SQLite/Postgres support
+- ✅ **Models**: `TimeEntry`, `CreateTimeEntryRequest`, `UpdateTimeEntryRequest`
+- ✅ **Repository Layer**: Full CRUD via JDBC with SQLite/Postgres (Supabase) support
 - ✅ **Service Layer**: Business logic, validation, auto-mileage calculation
-- ✅ **Handlers**: All HTTP endpoints implemented
+- ✅ **Controllers**: All HTTP endpoints implemented
 - ✅ **Routes**: Registered in `/api/v1/time-entries`
 - ✅ **Validation**: Category, date, hours, description validation
-- ✅ **Date Formatting**: Custom `Date` type ensures YYYY-MM-DD format in JSON
+- ✅ **Persistence**: Set `DATABASE_URL` to your Supabase Postgres URI; otherwise local SQLite
 
 ### Frontend (Vue/TypeScript)
-- ✅ **Store**: Pinia store with all CRUD operations
-- ✅ **API Client**: Axios client configured for all endpoints
+- ✅ **Store**: Pinia store with all CRUD operations (`stores/reps.ts` → `timeEntryApi`)
+- ✅ **API Client**: Axios client to `/api/v1` (Vite proxies to Java on `:8080`)
 - ✅ **Types**: TypeScript interfaces match backend models
-- ✅ **UI Components**: REPSView and REPSEntryForm components
+- ✅ **UI Components**: REPSView, REPSEntryForm, REPSQuickCapture (voice + mileage + CSV)
 - ✅ **Filtering**: Property, category, date range filters
 
 ## 🔗 API Endpoints
@@ -116,19 +116,25 @@ To verify everything works:
 
 ## 🚀 Next Steps
 
-1. **Start the backend server**:
+1. **Point Java at Supabase** (required for real data):
+   ```bash
+   export DATABASE_URL='postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres'
+   ```
+   Confirm with `curl http://localhost:8080/health` → `"database":"postgres"`.
+
+2. **Start the Java backend**:
    ```bash
    cd backend
-   go run cmd/server/main.go
+   mvn spring-boot:run
    ```
 
-2. **Start the frontend** (if not already running):
+3. **Start the frontend** (if not already running):
    ```bash
    cd frontend
    npm run dev
    ```
 
-3. **Test the UI**: Navigate to `/reps` route and try:
+4. **Test the UI**: Navigate to `/reps` route and try:
    - Creating a new entry
    - Filtering by property/category/date
    - Editing an entry

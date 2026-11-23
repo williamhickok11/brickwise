@@ -84,7 +84,15 @@ public class TimeEntryRepository {
     public List<TimeEntry> findAll(Integer propertyId, String startDate, String endDate, String category) {
         StringBuilder sql = new StringBuilder("SELECT * FROM time_entries WHERE 1=1");
         List<Object> args = new ArrayList<>();
-        if (propertyId != null) { sql.append(" AND property_id = ?"); args.add(propertyId); }
+        if (propertyId != null) {
+            if (propertyId == 0) {
+                // 0 / "null" from the API means General activities (NULL property_id)
+                sql.append(" AND property_id IS NULL");
+            } else {
+                sql.append(" AND property_id = ?");
+                args.add(propertyId);
+            }
+        }
         if (startDate != null && !startDate.isBlank()) { sql.append(" AND date >= ?"); args.add(startDate); }
         if (endDate != null && !endDate.isBlank()) { sql.append(" AND date <= ?"); args.add(endDate); }
         if (category != null && !category.isBlank()) { sql.append(" AND category = ?"); args.add(category); }
