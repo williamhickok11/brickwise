@@ -22,8 +22,10 @@ public final class JdbcSupport {
         Object v = rs.getObject(col);
         if (v == null) return null;
         if (v instanceof Timestamp ts) return ts.toInstant();
+        if (v instanceof Number n) return epochToInstant(n.longValue());
         String s = v.toString().trim();
         if (s.isEmpty()) return null;
+        if (isAllDigits(s)) return epochToInstant(Long.parseLong(s));
         try {
             return Instant.parse(s.contains("T") ? s.replace(" ", "T") + (s.endsWith("Z") ? "" : "Z") : s + "T00:00:00Z");
         } catch (DateTimeParseException e) {
@@ -42,8 +44,15 @@ public final class JdbcSupport {
         if (v == null) return null;
         if (v instanceof java.sql.Date d) return d.toLocalDate();
         if (v instanceof LocalDate ld) return ld;
+        if (v instanceof Number n) {
+            return epochToInstant(n.longValue()).atZone(ZoneOffset.UTC).toLocalDate();
+        }
         String s = v.toString().trim();
         if (s.isEmpty()) return null;
+        // SQLite JDBC often returns DATE columns as unix-seconds strings (e.g. "1795305600")
+        if (isAllDigits(s)) {
+            return epochToInstant(Long.parseLong(s)).atZone(ZoneOffset.UTC).toLocalDate();
+        }
         return LocalDate.parse(s.substring(0, Math.min(10, s.length())));
     }
 
@@ -53,5 +62,21 @@ public final class JdbcSupport {
         if (v instanceof Boolean b) return b;
         if (v instanceof Number n) return n.intValue() != 0;
         return "true".equalsIgnoreCase(v.toString()) || "1".equals(v.toString());
+    }
+
+    private static Instant epochToInstant(long epoch) {
+        // Heuristic: values past year ~2286 in seconds are treated as millis
+        if (epoch > 10_000_000_000L) {
+            return Instant.ofEpochMilli(epoch);
+        }
+        return Instant.ofEpochSecond(epoch);
+    }
+
+    private static boolean isAllDigits(String s) {
+        if (s.isEmpty()) return false;
+        for (int i = 0; i < s.length(); i++) {
+            if (!Character.isDigit(s.charAt(i))) return false;
+        }
+        return true;
     }
 }
