@@ -64,6 +64,30 @@ public class TimeEntryService {
         }
     }
 
+    /** Builds a CSV download body for the given REPS time entries. */
+    public String toCsv(List<TimeEntry> entries) {
+        StringBuilder csv = new StringBuilder(
+                "Date,Activity Category,Description,Time Spent (hrs),Notes,Mileage,Property ID\n");
+        for (TimeEntry e : entries) {
+            csv.append(e.getDate()).append(',')
+                    .append(quote(e.getCategory())).append(',')
+                    .append(quote(e.getDescription())).append(',')
+                    .append(e.getHours()).append(',')
+                    .append(quote(e.getNotes())).append(',')
+                    .append(e.getMileage()).append(',')
+                    .append(e.getPropertyId() == null ? "" : e.getPropertyId())
+                    .append('\n');
+        }
+        return csv.toString();
+    }
+
+    private static String quote(String s) {
+        if (s == null) {
+            return "\"\"";
+        }
+        return "\"" + s.replace("\"", "\"\"") + "\"";
+    }
+
     private static TimeEntry fromRequest(CreateTimeEntryRequest req) {
         TimeEntry t = new TimeEntry();
         t.setPropertyId(req.getPropertyId());
