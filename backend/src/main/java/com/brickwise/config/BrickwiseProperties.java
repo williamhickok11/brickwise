@@ -13,6 +13,8 @@ public class BrickwiseProperties {
     private String dbPath = "./brickwise.db";
     private String documentsDir = "./data/documents";
     private String propertyImagesDir = "./data/property-images";
+    /** From-address used when emailing REPS CSV exports. */
+    private String mailFrom = "noreply@brickwise.local";
     private final Qbo qbo = new Qbo();
 
     public String getDbPath() { return dbPath; }
@@ -21,6 +23,8 @@ public class BrickwiseProperties {
     public void setDocumentsDir(String documentsDir) { this.documentsDir = documentsDir; }
     public String getPropertyImagesDir() { return propertyImagesDir; }
     public void setPropertyImagesDir(String propertyImagesDir) { this.propertyImagesDir = propertyImagesDir; }
+    public String getMailFrom() { return mailFrom; }
+    public void setMailFrom(String mailFrom) { this.mailFrom = mailFrom; }
     public Qbo getQbo() { return qbo; }
 
     public static class Qbo {

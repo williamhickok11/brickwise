@@ -22,6 +22,10 @@ Or: `mvn -q -DskipTests package && java -jar target/brickwise-backend-0.1.0-SNAP
 | `DOCUMENTS_DIR` | `./data/documents` | Lease PDFs |
 | `PROPERTY_IMAGES_DIR` | `./data/property-images` | Property photos |
 | `QBO_*` | — | QuickBooks Online OAuth (optional) |
+| `MAIL_HOST` | _(empty)_ | SMTP host; required to email REPS CSV exports |
+| `MAIL_PORT` | `587` | SMTP port |
+| `MAIL_USERNAME` / `MAIL_PASSWORD` | — | SMTP credentials |
+| `MAIL_FROM` | `noreply@brickwise.local` | From address for REPS emails |
 
 ### Supabase (hosted Postgres)
 
@@ -50,4 +54,7 @@ REPS time tracking uses:
 
 - `GET/POST /api/v1/time-entries`
 - `GET/PUT/DELETE /api/v1/time-entries/{id}`
-- `GET /api/v1/time-entries/export` (CSV)
+- `GET /api/v1/time-entries/export` (CSV download)
+- `POST /api/v1/time-entries/export/email` (email CSV + summary; body: `{ "to": "...", "subject?": "...", filters… }`)
+
+On first startup with an empty `time_entries` table, sample REPS rows (and a sample property if needed) are seeded automatically.
