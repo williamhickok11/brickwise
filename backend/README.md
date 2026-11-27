@@ -7,6 +7,8 @@ See **[LEARNING.md](./LEARNING.md)** for C# /.NET → Java notes.
 ## Run
 
 ```bash
+# Load secrets from gitignored backend/.env (DATABASE_URL, MAIL_*, …)
+set -a && source .env && set +a
 mvn spring-boot:run
 ```
 
