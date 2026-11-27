@@ -96,7 +96,8 @@ public class TimeEntryRepository {
         if (startDate != null && !startDate.isBlank()) { sql.append(" AND date >= ?"); args.add(startDate); }
         if (endDate != null && !endDate.isBlank()) { sql.append(" AND date <= ?"); args.add(endDate); }
         if (category != null && !category.isBlank()) { sql.append(" AND category = ?"); args.add(category); }
-        sql.append(" ORDER BY date DESC, id DESC");
+        // Chronological (oldest first) for the UI list and CSV export.
+        sql.append(" ORDER BY date ASC, id ASC");
         return jdbc.query(sql.toString(), MAPPER, args.toArray());
     }
 
