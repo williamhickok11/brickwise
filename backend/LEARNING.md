@@ -54,5 +54,3 @@ Leave `DATABASE_URL` unset for SQLite (`./brickwise.db`). Set it for Postgres/Su
 4. `service/PropertyService.java` + `repository/PropertyRepository.java` — business vs data
 5. `error/GlobalExceptionHandler.java` — consistent `{code,message}` errors
 6. `qbo/QboClient.java` — external HTTP without a third-party SDK
-
-The previous Go implementation is preserved under `../backend-go/` for side-by-side comparison.

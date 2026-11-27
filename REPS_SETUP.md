@@ -119,7 +119,7 @@ To verify everything works:
 1. **Start the backend server**:
    ```bash
    cd backend
-   go run cmd/server/main.go
+   mvn spring-boot:run
    ```
 
 2. **Start the frontend** (if not already running):

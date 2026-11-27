@@ -222,7 +222,7 @@ When proposing features, include:
 - Future: Consider Excel formatting for v2
 
 ### Database Migrations
-- Schema changes handled in `backend/internal/db/db.go`
+- Schema changes handled in `backend/src/main/java/com/brickwise/config/SchemaBootstrap.java`
 - Supports both SQLite (dev) and Postgres (production)
 - `default_mileage` column added to existing `properties` table
 - `time_entries` table created with foreign key to `properties`

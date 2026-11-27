@@ -28,30 +28,7 @@ curl -X POST http://localhost:8080/api/v1/properties \
   }'
 ```
 
-## Option 2: Using SQL Script
-
-If you have SQLite3 installed:
-
-```bash
-cd backend
-sqlite3 brickwise.db < scripts/create-properties.sql
-```
-
-Or for Postgres:
-
-```bash
-cd backend
-psql $DATABASE_URL -f scripts/create-properties.sql
-```
-
-## Option 3: Using the Go Script
-
-```bash
-cd backend
-go run cmd/create-properties/main.go
-```
-
-## Option 4: Via the Frontend UI
+## Option 2: Via the Frontend UI
 
 1. Navigate to the Properties page in your app
 2. Click "Add Property"

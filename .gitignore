@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-vendor/
 
 # Build outputs
 dist/
@@ -11,15 +10,9 @@ build/
 *.so
 *.dylib
 
-# Go
-*.test
-*.out
-*.prof
-
 # Java / Maven
 backend/target/
 backend/*.db
-backend-go/**/brickwise.db
 *.class
 .classpath
 .project

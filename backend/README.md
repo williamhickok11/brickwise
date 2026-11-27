@@ -1,6 +1,6 @@
 # Brickwise Backend (Java)
 
-Spring Boot 3 / Java 21 REST API. Converted from the Go backend in `../backend-go/`.
+Spring Boot 3 / Java 21 REST API.
 
 See **[LEARNING.md](./LEARNING.md)** for C# /.NET → Java notes.
 
