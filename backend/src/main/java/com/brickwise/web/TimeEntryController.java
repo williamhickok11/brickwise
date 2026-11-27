@@ -24,11 +24,11 @@ public class TimeEntryController {
 
     @GetMapping({"", "/"})
     public List<TimeEntry> list(
-            @RequestParam(value = "property_id", required = false) Integer propertyId,
+            @RequestParam(value = "property_id", required = false) String propertyId,
             @RequestParam(value = "start_date", required = false) String startDate,
             @RequestParam(value = "end_date", required = false) String endDate,
             @RequestParam(value = "category", required = false) String category) {
-        return service.list(propertyId, startDate, endDate, category);
+        return service.list(parsePropertyIdFilter(propertyId), startDate, endDate, category);
     }
 
     @GetMapping("/{id}")
@@ -55,11 +55,11 @@ public class TimeEntryController {
 
     @GetMapping("/export")
     public ResponseEntity<byte[]> export(
-            @RequestParam(value = "property_id", required = false) Integer propertyId,
+            @RequestParam(value = "property_id", required = false) String propertyId,
             @RequestParam(value = "start_date", required = false) String startDate,
             @RequestParam(value = "end_date", required = false) String endDate,
             @RequestParam(value = "category", required = false) String category) {
-        List<TimeEntry> entries = service.list(propertyId, startDate, endDate, category);
+        List<TimeEntry> entries = service.list(parsePropertyIdFilter(propertyId), startDate, endDate, category);
         StringBuilder csv = new StringBuilder("Date,Activity Category,Description,Time Spent (hrs),Notes,Mileage\n");
         for (TimeEntry e : entries) {
             csv.append(e.getDate()).append(',')
@@ -74,6 +74,21 @@ public class TimeEntryController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"time-entries.csv\"")
                 .contentType(MediaType.parseMediaType("text/csv"))
                 .body(body);
+    }
+
+    /**
+     * Matches the Go handler: {@code property_id=null} or {@code 0} means "General"
+     * (DB {@code property_id IS NULL}). Omit the param for all properties.
+     */
+    static Integer parsePropertyIdFilter(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String v = raw.trim();
+        if ("null".equalsIgnoreCase(v) || "0".equals(v)) {
+            return 0;
+        }
+        return Integer.parseInt(v);
     }
 
     private static String quote(String s) {
